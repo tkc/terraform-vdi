@@ -8,6 +8,11 @@ variable "subnet_ids" {
   type        = list(string)
 }
 
+variable "security_group_id" {
+  description = "Custom SG attached to WorkSpaces instances (carries the AD port rules)"
+  type        = string
+}
+
 variable "bundle_id" {
   description = "WorkSpaces bundle ID (Windows version and compute type)"
   type        = string

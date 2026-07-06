@@ -60,6 +60,7 @@ unit "workspaces_pools" {
   inputs = {
     directory_id          = unit.managed_ad.outputs.directory_id
     subnet_ids            = unit.vpc.outputs.private_subnet_ids
+    security_group_id     = unit.vpc.outputs.sg_workspaces_id
     bundle_id             = local.vars.locals.workspaces_bundle_id
     pool_name             = local.vars.locals.pool_name
     workspace_access_url  = local.vars.locals.workspace_access_url

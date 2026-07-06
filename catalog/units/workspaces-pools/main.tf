@@ -32,6 +32,9 @@ resource "aws_workspaces_directory" "main" {
     enable_internet_access              = false # 閉鎖網のためインターネット不可
     enable_maintenance_mode             = true
     user_enabled_as_local_administrator = false
+    # ここに配線しないと SG は定義だけで一度も効かない（review-log #12-2）。
+    # AD ポートセット（vpc の ad_ports）はこの SG 経由で適用される
+    custom_security_group_id = var.security_group_id
   }
 
   # Entra ID (SAML) を IdP として登録
