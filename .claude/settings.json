@@ -1,0 +1,45 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(terraform apply*)",
+      "Bash(terragrunt apply*)",
+      "Bash(terragrunt run-all apply*)",
+      "Bash(terraform destroy*)",
+      "Bash(terragrunt destroy*)",
+      "Bash(terragrunt run-all destroy*)",
+      "Bash(terraform state rm*)",
+      "Bash(terraform state mv*)",
+      "Bash(terraform import*)",
+      "Bash(aws secretsmanager get-secret-value*)",
+      "Read(**/*.tfstate)",
+      "Read(**/.env)",
+      "Read(**/.env.*)"
+    ],
+    "allow": [
+      "Bash(terraform fmt*)",
+      "Bash(terraform validate*)",
+      "Bash(terraform init -backend=false*)",
+      "Bash(terragrunt run-all plan*)",
+      "Bash(terragrunt plan*)",
+      "Bash(tflint*)",
+      "Bash(make check)",
+      "Bash(make fmt)",
+      "Bash(make validate)",
+      "Bash(make lint)",
+      "Bash(make plan)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_FILE_PATHS\"; case \"$f\" in *.tf) terraform fmt \"$f\" >/dev/null 2>&1 || true ;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}
