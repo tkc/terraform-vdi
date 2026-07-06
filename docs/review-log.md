@@ -7,6 +7,37 @@
 
 ---
 
+## #2 2026-07-06 — 観点: コードの読みやすさ
+
+### 確認事項
+
+- 未使用コード（dead code）の有無
+- マジックナンバー・ハードコード値の妥当性
+- 変数の description / validation の網羅性
+- 理解しにくい構文（count の直積等）
+
+### 気づいた点（未修正 → 次回対応）
+
+| # | 深刻度 | 場所 | 内容 |
+|---|---|---|---|
+| 2-1 | LOW | `pool_updater.py:14` | `ec2 = boto3.client("ec2")` が未使用（dead code）。削除すべき |
+| 2-2 | **MEDIUM** | `pool_updater.py` | `IngestionProcess="BYOL_GRAPHICS_G4DN"` がハードコード。GPU 非搭載の Bundle では誤り の可能性が高く、根拠コメントもない。環境変数化 + 値の妥当性確認が必要 |
+| 2-3 | LOW | `workspaces-pools/main.tf` | セッションタイムアウト（3600/1800/28800）がハードコード。同じ値が docs/architecture.md にも重複しており、変更時にドリフトする。変数化して stack_vars に出すべき |
+| 2-4 | LOW | `tgw-attachment/main.tf` | ルートの count 直積（`count.index % ...` / `floor(...)`）が読みにくい。`for_each` + `setproduct` の方が意図が明確 |
+| 2-5 | LOW | `live/.../stack_vars.hcl` | プレースホルダー値（`tgw-XXXX...`）に validation がなく、plan 時に不親切なエラーになる。variables 側に validation を追加して早期に明確なメッセージを出すべき |
+| 2-6 | INFO | 各 variables.tf | 24 変数中 5 個に description がない（managed-ad の vpc_id 等） |
+
+### 今回修正したこと
+
+- **1-1 修正済み**: EventBridge を `window-id` / イメージ ARN プレフィックスでフィルタ（`3df326d`）
+- **1-2 修正済み**: SAML ロールを `workspaces:Stream` + userId 条件のみに縮小（同上）
+- 付随修正: pool_updater.py のイベント ARN 取得を `event["resources"][0]` に修正（Image Builder イベントの実際の形式に合わせた）
+
+### 次回の確認事項
+
+1. **修正**: 2-1（dead code）・2-2（IngestionProcess）・1-3（SG 全ポート egress）を修正
+2. **新規レビュー観点**: ドキュメントの不完全さ（README とコードの乖離・architecture.md の未記載事項・引き継ぎ表の鮮度）
+
 ## #1 2026-07-06 — 観点: セキュリティ
 
 ### 確認事項
