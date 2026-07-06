@@ -38,6 +38,8 @@ Golden Image 自動更新フロー: Image Builder 週次スケジュール（日
 
 ## 変更時の連動ルール
 
+- **定義 ≠ 有効**: SG・IAM ロール・KMS キー・SNS トピックは定義しただけでは効かない。**アタッチ/配線する行まで書けて初めて完了**（未配線の実例: review-log #8-1・#12-2。どちらも「定義済みで一度も効いていない SG」だった）
+
 - ユニットに variable を追加したら → `catalog/stacks/vdi-core/terragrunt.stack.hcl` の inputs と `live/**/stack_vars.hcl` にも追加
 - output を追加/変更したら → それを参照している stack の inputs を grep で確認（`grep -r "outputs\." catalog/stacks/`）
 - Lambda (.py) を変更したら → `data.archive_file` の source_code_hash が自動で差分検知するので追加作業不要
