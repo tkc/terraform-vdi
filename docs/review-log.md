@@ -7,6 +7,43 @@
 
 ---
 
+## #5 2026-07-06 — 観点: セキュリティ（2 巡目）
+
+### 今回修正したこと（前回指摘の解消、コミット `dcacfd8`）
+
+- **4-1 修正済み (HIGH)**: 空振りしていた SSM Maintenance Window 構成を撤去し、Image Builder のネイティブ週次スケジュール（土曜 17:00 UTC = 日曜 02:00 JST）に簡素化。**ssm-patch ユニットと orchestrator Lambda を削除**し、チェーンを 6 段 → 3 段に（部品が減る = 攻撃面と故障点も減る）
+- **4-6 修正済み**: root.hcl に `provider "awscc"`（region 明示）を生成追加
+- **4-7 修正済み**: Bundle 照合を全ページ走査に（蓄積時の同名 Create 停止を防止）
+- **4-8 修正済み**: Bundle ストレージ容量を変数化（既定 50/80 GB）
+- **4-3 修正済み**: image-builder の provider 最小バージョンを実要件（>= 5.86）に
+- **4-2 修正済み**: レシピ immutable の注意書きをコメント + architecture.md に追加
+- ドキュメント追随: architecture.md の要件表・シーケンス図、README ユニット一覧（8→7）、CLAUDE.md
+
+### 確認事項
+
+- #1 で修正した項目の退行有無（SAML 権限・EventBridge フィルタ・SG ポート）
+- Lambda 失敗時の最終防衛（DLQ・アラーム）
+- S3 バケットポリシー（TLS 強制）
+- タグ戦略（コスト配賦・棚卸し観点）
+
+### 気づいた点（未修正 → 次回対応）
+
+| # | 深刻度 | 場所 | 内容 |
+|---|---|---|---|
+| 5-1 | **MEDIUM** | `golden-image-updater` | **pool_updater 失敗の最終防衛がない**。EventBridge 非同期リトライ（2 回）を使い切るとイベントは通知なしに消え、Pool が古いイメージのまま誰も気づけない = パッチ適用の実効性が静かに失われる。Lambda の DLQ（SQS）+ CloudWatch アラーム（Errors > 0 と DLQ 滞留）を追加すべき |
+| 5-2 | LOW | `image-builder` ログバケット | TLS 強制（`aws:SecureTransport` = false を Deny）のバケットポリシーがない。多層防御として追加推奨 |
+| 5-3 | LOW | `workspaces-pools` | awscc provider は default_tags 非対応のため **Pool 本体にタグが一切付かない**。コスト配賦・棚卸しから漏れる。awscc リソースに明示 tags を付与すべき |
+| 5-4 | INFO | 再確認結果 | #1〜#4 の修正済み項目に退行なし（SAML = Stream+userId 条件維持・EventBridge フィルタ維持・SG ポート制限維持）。Trivy HIGH/CRITICAL 0 件継続 |
+
+### 次回の確認事項
+
+1. **修正**: 5-1（DLQ + アラーム）— 3-2（runbook）と対で実施すると効果的
+2. **修正**: 5-2（TLS 強制ポリシー）・5-3（Pool タグ）
+3. **残バックログ**: 3-2（runbook）・1-4（Lambda IAM Resource 絞り込み）・1-6（state アクセス制御 README）・1-7（VPC エンドポイントポリシー）・2-3（タイムアウト変数化）・2-5（validation）・2-6（description）・4-4（ビルド用 SG 分離）
+4. **新規レビュー観点**: コードの読みやすさ（2 巡目 — 簡素化後の構造・削除の取り残し・コメントの鮮度）
+
+---
+
 ## #4 2026-07-06 — 観点: 問題の有無（全般整合性）
 
 ### 今回修正したこと（前回指摘の解消、コミット `45d1eac`）

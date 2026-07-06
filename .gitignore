@@ -29,3 +29,7 @@ Thumbs.db
 # IDE
 .idea/
 .vscode/
+
+# Python bytecode（Lambda のローカルテストで生成される）
+__pycache__/
+*.pyc
