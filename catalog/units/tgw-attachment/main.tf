@@ -1,4 +1,11 @@
-# TGW は他アカウントが所有し RAM 共有されている前提
+# ══════════════════════════════════════════════════════════════════
+# unit: tgw-attachment — 他 AWS アカウントへの閉鎖網経路
+#
+# Transit Gateway 本体は接続先アカウントが所有し、RAM でこのアカウントに
+# 共有されている前提。このユニットは「アタッチメント + ルート」だけを管理する。
+# TGW ルートテーブル側の設定（戻り経路）は接続先アカウントの責任範囲。
+# ══════════════════════════════════════════════════════════════════
+
 data "aws_ec2_transit_gateway" "shared" {
   filter {
     name   = "transit-gateway-id"
@@ -19,7 +26,8 @@ resource "aws_ec2_transit_gateway_vpc_attachment" "main" {
   }
 }
 
-# プライベートサブネットの各ルートテーブルに他アカウント CIDR → TGW のルートを追加
+# プライベートサブネットの各ルートテーブルに他アカウント CIDR → TGW のルートを追加。
+# (ルートテーブル数 × CIDR 数) の直積を count で展開している
 resource "aws_route" "to_other_accounts" {
   count = length(var.route_table_ids) * length(var.other_account_cidrs)
 

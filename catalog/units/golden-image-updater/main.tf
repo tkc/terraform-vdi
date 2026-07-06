@@ -1,3 +1,15 @@
+# ══════════════════════════════════════════════════════════════════
+# unit: golden-image-updater — 更新チェーンの接着剤（イベント駆動）
+#
+#   SSM Maintenance Window 完了 ─EventBridge→ orchestrator Lambda
+#     → Image Builder パイプライン起動
+#   Image Builder AMI 完成      ─EventBridge→ pool_updater Lambda
+#     → WorkSpaces 画像インポート → Pool 更新
+#
+# 承認ゲートなしの完全自動。承認制にしたい場合は orchestrator の前に
+# SNS + 手動承認を挿入する（docs/architecture.md 参照）。
+# ══════════════════════════════════════════════════════════════════
+
 data "archive_file" "orchestrator" {
   type        = "zip"
   source_file = "${path.module}/lambda/orchestrator.py"

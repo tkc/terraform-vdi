@@ -1,3 +1,11 @@
+# ══════════════════════════════════════════════════════════════════
+# stack: vdi-core — 8 ユニットの依存関係と配線を一元管理
+#
+# ユニット間の outputs → inputs の受け渡しはすべてここに集約。
+# 環境固有の値は live/<env>/.../stack_vars.hcl から読む（このファイルは
+# 環境非依存に保つ）。依存グラフは docs/architecture.md 参照。
+# ══════════════════════════════════════════════════════════════════
+
 locals {
   # live/ から渡される変数
   vars = read_terragrunt_config(find_in_parent_folders("stack_vars.hcl"))

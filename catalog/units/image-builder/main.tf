@@ -1,3 +1,12 @@
+# ══════════════════════════════════════════════════════════════════
+# unit: image-builder — Golden Image のビルドライン
+#
+# Windows Server 2022 ベース + 社内アプリ + Windows Update を焼き込んだ
+# AMI を作る。パイプラインのスケジュールは意図的に無効化してあり、
+# 起動は golden-image-updater の Lambda からのみ行う（イベント駆動）。
+# ビルドはプライベートサブネット内（インターネット不要）。
+# ══════════════════════════════════════════════════════════════════
+
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 

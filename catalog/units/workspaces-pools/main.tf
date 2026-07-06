@@ -1,3 +1,14 @@
+# ══════════════════════════════════════════════════════════════════
+# unit: workspaces-pools — VDI 本体（セッションベースのデスクトップ）
+#
+# Personal でなく Pools を採用: ユーザー固定のデスクトップではなく、
+# 接続時にセッションを割り当てる方式。容量 = 同時接続上限（2）。
+#
+# provider の使い分け:
+#   - ディレクトリ登録 = AWS provider（aws_workspaces_directory）
+#   - Pool 本体        = AWSCC provider（AWS provider が Pools 未対応のため）
+# ══════════════════════════════════════════════════════════════════
+
 data "aws_workspaces_bundle" "windows" {
   bundle_id = var.bundle_id
 }

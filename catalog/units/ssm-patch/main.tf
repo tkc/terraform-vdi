@@ -1,8 +1,19 @@
+# ══════════════════════════════════════════════════════════════════
+# unit: ssm-patch — Golden Image 自動更新チェーンの起点
+#
+# 更新チェーン全体:
+#   [このユニット] Maintenance Window（日曜 AM2:00）で Windows Update 適用
+#     → EventBridge が完了(SUCCESS)を検知          [golden-image-updater]
+#     → Lambda が Image Builder パイプライン起動    [image-builder]
+#     → 新 AMI 完成 → Lambda が Pool を更新         [golden-image-updater]
+# ══════════════════════════════════════════════════════════════════
+
 resource "aws_ssm_patch_baseline" "windows" {
   name             = "vdi-windows-patch-baseline"
   operating_system = "WINDOWS"
   description      = "Windows patch baseline for VDI Golden Image"
 
+  # Critical/Security は 7 日、一般 Updates は 14 日の様子見期間を置いてから自動承認
   approval_rule {
     approve_after_days = 7
 

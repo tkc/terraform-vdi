@@ -1,3 +1,10 @@
+# ══════════════════════════════════════════════════════════════════
+# root.hcl — live/ 配下すべての Terragrunt 共通設定
+#
+# ここで backend（S3 + DynamoDB ロック）・provider・versions を一元生成する。
+# 各環境ディレクトリの terragrunt.stack.hcl は include するだけ。
+# ══════════════════════════════════════════════════════════════════
+
 locals {
   account_id = get_aws_account_id()
   region     = "ap-northeast-1"

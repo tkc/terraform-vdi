@@ -1,3 +1,11 @@
+# ══════════════════════════════════════════════════════════════════
+# unit: vpc — VDI 基盤のネットワーク土台
+#
+# 設計方針: 完全閉鎖網。パブリックサブネット・IGW・NAT を一切作らない。
+# AWS API への到達は VPC エンドポイント経由のみ。
+# 他アカウントへの経路は tgw-attachment ユニットが追加する。
+# ══════════════════════════════════════════════════════════════════
+
 data "aws_availability_zones" "available" {
   state = "available"
 }
@@ -8,6 +16,8 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true
 }
 
+# プライベートサブネット × 2 AZ。
+# Managed AD と WorkSpaces がともに「異なる AZ の 2 サブネット」を要求するため 2 固定
 resource "aws_subnet" "private" {
   count             = 2
   vpc_id            = aws_vpc.main.id
@@ -34,7 +44,9 @@ resource "aws_route_table_association" "private" {
   route_table_id = aws_route_table.private[count.index].id
 }
 
-# VPC エンドポイント（インターネット不要で AWS サービスに到達）
+# ── VPC エンドポイント ──────────────────────────────────────────
+# インターネット遮断環境で各 AWS サービスに到達するための唯一の経路。
+# ここに無いサービスを新たに使う場合はエンドポイント追加が必要
 locals {
   interface_endpoints = [
     "ssm",
