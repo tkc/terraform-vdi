@@ -16,6 +16,87 @@ data "archive_file" "pool_updater" {
   output_path = "${path.module}/lambda/pool_updater.zip"
 }
 
+# ── 失敗時の最終防衛: DLQ + アラーム ─────────────────────────
+# EventBridge の非同期リトライ（2 回）を使い切ったイベントを DLQ に保全し、
+# アラームで通知する。これが無いと Pool が古いイメージのまま誰も気づけない
+resource "aws_sqs_queue" "pool_updater_dlq" {
+  name                      = "vdi-pool-updater-dlq"
+  message_retention_seconds = 1209600 # 14 日（手動リカバリの猶予）
+  sqs_managed_sse_enabled   = true
+}
+
+# SNS 暗号化用 CMK。AWS 管理キー（alias/aws/sns）はキーポリシーを変更できず
+# CloudWatch アラームが発行に失敗するため、CMK + 明示のキーポリシーにする
+resource "aws_kms_key" "alerts" {
+  description         = "CMK for VDI alert SNS topic"
+  enable_key_rotation = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowAccountAdmin"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowCloudWatchAlarms"
+        Effect    = "Allow"
+        Principal = { Service = "cloudwatch.amazonaws.com" }
+        Action    = ["kms:Decrypt", "kms:GenerateDataKey*"]
+        Resource  = "*"
+      }
+    ]
+  })
+}
+
+data "aws_caller_identity" "current" {}
+
+resource "aws_sns_topic" "alerts" {
+  name              = "vdi-golden-image-alerts"
+  kms_master_key_id = aws_kms_key.alerts.arn
+}
+
+# alert_email が設定されている場合のみメール購読を作成
+resource "aws_sns_topic_subscription" "email" {
+  count     = var.alert_email != "" ? 1 : 0
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+}
+
+resource "aws_cloudwatch_metric_alarm" "pool_updater_errors" {
+  alarm_name          = "vdi-pool-updater-errors"
+  alarm_description   = "Golden Image の Pool 反映 Lambda が失敗（runbook.md 参照）"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Errors"
+  dimensions          = { FunctionName = aws_lambda_function.pool_updater.function_name }
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 0
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "dlq_messages" {
+  alarm_name          = "vdi-pool-updater-dlq-not-empty"
+  alarm_description   = "Pool 反映イベントがリトライを使い切って DLQ に滞留（runbook.md 参照）"
+  namespace           = "AWS/SQS"
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  dimensions          = { QueueName = aws_sqs_queue.pool_updater_dlq.name }
+  statistic           = "Maximum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 0
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+}
+
 # ── Lambda: pool_updater ────────────────────────────────────
 resource "aws_lambda_function" "pool_updater" {
   function_name    = "vdi-workspaces-pool-updater"
@@ -28,6 +109,10 @@ resource "aws_lambda_function" "pool_updater" {
   # 画像取り込みの待機があるため Lambda 上限いっぱい。
   # 足りない分は冪等リトライ（EventBridge 非同期×2）で続きから再開する
   timeout = 900
+
+  dead_letter_config {
+    target_arn = aws_sqs_queue.pool_updater_dlq.arn
+  }
 
   environment {
     variables = {
@@ -113,6 +198,11 @@ resource "aws_iam_role_policy" "lambda_pool_updater" {
         Effect   = "Allow"
         Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
         Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["sqs:SendMessage"]
+        Resource = [aws_sqs_queue.pool_updater_dlq.arn]
       }
     ]
   })

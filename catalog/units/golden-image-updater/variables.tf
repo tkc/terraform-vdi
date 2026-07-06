@@ -31,3 +31,9 @@ variable "bundle_root_storage_gb" {
   type        = number
   default     = 80
 }
+
+variable "alert_email" {
+  description = "Email address for failure alerts (empty = SNS topic only, no subscription)"
+  type        = string
+  default     = ""
+}

@@ -173,6 +173,30 @@ resource "aws_iam_role_policy_attachment" "image_builder_core" {
   policy_arn = each.value
 }
 
+# AWS 管理ポリシーの S3 書込許可は "*imagebuilder*" 名のバケットに限られ、
+# 本バケット名（vdi-image-builder-logs-*）はパターン一致しない。
+# さらに SSE-KMS のため KMS 権限も必要 — 両方を明示付与する
+resource "aws_iam_role_policy" "image_builder_logs" {
+  name = "vdi-image-builder-log-write"
+  role = aws_iam_role.image_builder.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:PutObject"]
+        Resource = "${aws_s3_bucket.image_builder_logs.arn}/*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["kms:GenerateDataKey", "kms:Decrypt"]
+        Resource = [aws_kms_key.image_builder_logs.arn]
+      }
+    ]
+  })
+}
+
 resource "aws_iam_instance_profile" "image_builder" {
   name = "vdi-image-builder-profile"
   role = aws_iam_role.image_builder.name
@@ -207,4 +231,28 @@ resource "aws_s3_bucket_public_access_block" "image_builder_logs" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+# TLS 以外のアクセスを拒否（多層防御）
+resource "aws_s3_bucket_policy" "image_builder_logs_tls_only" {
+  bucket = aws_s3_bucket.image_builder_logs.bucket
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "DenyInsecureTransport"
+      Effect    = "Deny"
+      Principal = "*"
+      Action    = "s3:*"
+      Resource = [
+        aws_s3_bucket.image_builder_logs.arn,
+        "${aws_s3_bucket.image_builder_logs.arn}/*",
+      ]
+      Condition = {
+        Bool = { "aws:SecureTransport" = "false" }
+      }
+    }]
+  })
+
+  depends_on = [aws_s3_bucket_public_access_block.image_builder_logs]
 }

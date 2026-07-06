@@ -7,7 +7,7 @@ AWS WorkSpaces Pools による VDI 基盤の Terragrunt IaC。
 - **ネットワーク**: 完全閉鎖網（インターネット遮断、VPC エンドポイント + Transit Gateway のみ）
 - **Golden Image**: Windows Update を検知して自動リビルド → Pool 自動更新
 
-詳細は [docs/architecture.md](docs/architecture.md)（構成図・認証フロー・更新フロー）。
+詳細は [docs/architecture.md](docs/architecture.md)（構成図・認証フロー・更新フロー）。障害対応は [docs/runbook.md](docs/runbook.md)。
 
 ## リポジトリ構成
 

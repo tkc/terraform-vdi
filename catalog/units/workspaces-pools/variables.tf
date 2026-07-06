@@ -28,3 +28,13 @@ variable "max_user_sessions" {
   type        = number
   default     = 2
 }
+
+variable "tags" {
+  description = "Tags for awscc-managed resources (awscc does not inherit aws provider default_tags)"
+  type        = map(string)
+  default = {
+    Project     = "vdi"
+    ManagedBy   = "terragrunt"
+    Environment = "prod"
+  }
+}

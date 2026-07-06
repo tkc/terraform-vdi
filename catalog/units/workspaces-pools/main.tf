@@ -64,6 +64,10 @@ resource "awscc_workspaces_workspaces_pool" "main" {
     max_user_duration_in_seconds       = 28800 # 最大 8 時間
   }
 
+  # awscc provider は aws provider の default_tags を継承しないため明示付与
+  # （付けないとコスト配賦・棚卸しから漏れる）
+  tags = [for k, v in var.tags : { key = k, value = v }]
+
   lifecycle {
     # Golden Image の自動更新で bundle_id が変わるため ignore
     ignore_changes = [bundle_id]
