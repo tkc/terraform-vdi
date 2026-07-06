@@ -75,7 +75,7 @@ unit "image_builder" {
 
   inputs = {
     subnet_id         = unit.vpc.outputs.private_subnet_ids[0]
-    security_group_id = unit.vpc.outputs.sg_workspaces_id
+    security_group_id = unit.vpc.outputs.sg_image_builder_id
   }
 }
 
@@ -85,8 +85,9 @@ unit "golden_image_updater" {
   depends_on = [unit.image_builder, unit.workspaces_pools]
 
   inputs = {
-    workspaces_pool_id = unit.workspaces_pools.outputs.pool_id
-    image_arn_prefix   = unit.image_builder.outputs.image_arn_prefix
-    alert_email        = local.vars.locals.alert_email
+    workspaces_pool_id  = unit.workspaces_pools.outputs.pool_id
+    workspaces_pool_arn = unit.workspaces_pools.outputs.pool_arn
+    image_arn_prefix    = unit.image_builder.outputs.image_arn_prefix
+    alert_email         = local.vars.locals.alert_email
   }
 }

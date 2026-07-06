@@ -58,10 +58,11 @@ resource "awscc_workspaces_workspaces_pool" "main" {
     settings_group = var.pool_name
   }
 
+  # タイムアウト値と根拠は docs/architecture.md「セッションポリシー」表が単一情報源
   timeout_settings = {
-    disconnect_timeout_in_seconds      = 3600  # 切断後 1 時間でセッション終了
-    idle_disconnect_timeout_in_seconds = 1800  # アイドル 30 分で切断
-    max_user_duration_in_seconds       = 28800 # 最大 8 時間
+    disconnect_timeout_in_seconds      = var.disconnect_timeout_seconds
+    idle_disconnect_timeout_in_seconds = var.idle_disconnect_timeout_seconds
+    max_user_duration_in_seconds       = var.max_user_duration_seconds
   }
 
   # awscc provider は aws provider の default_tags を継承しないため明示付与

@@ -180,10 +180,22 @@ resource "aws_iam_role_policy" "lambda_pool_updater" {
     Version = "2012-10-17"
     Statement = [
       {
+        # 自パイプラインのイメージのみ取得可
+        Effect   = "Allow"
+        Action   = ["imagebuilder:GetImage"]
+        Resource = "${var.image_arn_prefix}*"
+      },
+      {
+        # 自 Pool のみ更新可
+        Effect   = "Allow"
+        Action   = ["workspaces:UpdateWorkspacesPool"]
+        Resource = [var.workspaces_pool_arn]
+      },
+      {
+        # 以下はリソースが動的（取り込みごとに新 Image/Bundle ARN）または
+        # リソースレベル指定非対応のため "*" のまま
         Effect = "Allow"
         Action = [
-          "imagebuilder:GetImage",
-          "workspaces:UpdateWorkspacesPool",
           "workspaces:ImportWorkspaceImage",
           "workspaces:DescribeWorkspaceImages",
           "workspaces:CreateWorkspaceBundle",

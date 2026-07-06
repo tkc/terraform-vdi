@@ -149,6 +149,8 @@ graph LR
 | Transit Gateway ID | `live/prod/ap-northeast-1/vdi/stack_vars.hcl` | プレースホルダー（他アカウント管理者に確認） |
 | WorkSpaces Bundle ID | 同上 | プレースホルダー（コンソールで確認。**初回構築時のみ使用**、以後は自動更新が置換） |
 | アラート通知先 `alert_email` | 同上 | 未設定（**空のままだとアラームが誰にも届かない**） |
+| WorkSpaces ディレクトリ登録型 | `workspaces-pools` ユニット | **要検証**: `aws_workspaces_directory` が PERSONAL 型で登録され、Pools には POOLS 型が必要な可能性（review-log #8-2）。AWS 認証環境での plan / 実機確認が必要 |
+| update-windows の到達性 | `image-builder` レシピ | **要検証**: 閉鎖網でビルドインスタンスが Windows Update に到達できるか（review-log #9-1 参照） |
 | Entra ID メタデータ XML | `catalog/units/saml-provider/` | プレースホルダー（Azure Portal から取得） |
 | AD 管理者パスワード | Secrets Manager | 事前作成が必要 |
 | CI の plan ジョブ | GitHub Variables `AWS_ROLE_ARN` | 未設定（OIDC ロール作成後に有効化） |

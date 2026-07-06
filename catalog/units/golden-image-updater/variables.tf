@@ -3,6 +3,11 @@ variable "workspaces_pool_id" {
   type        = string
 }
 
+variable "workspaces_pool_arn" {
+  description = "WorkSpaces Pool ARN (used to scope the Lambda IAM policy)"
+  type        = string
+}
+
 variable "image_arn_prefix" {
   description = "Image Builder image ARN prefix to filter EventBridge on (prevents pool updates from unrelated pipelines)"
   type        = string

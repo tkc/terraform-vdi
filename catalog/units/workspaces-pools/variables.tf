@@ -41,6 +41,24 @@ variable "max_user_sessions" {
   }
 }
 
+variable "disconnect_timeout_seconds" {
+  description = "Session lifetime after disconnect (recovery grace period)"
+  type        = number
+  default     = 3600
+}
+
+variable "idle_disconnect_timeout_seconds" {
+  description = "Idle time before auto-disconnect (frees pool capacity)"
+  type        = number
+  default     = 1800
+}
+
+variable "max_user_duration_seconds" {
+  description = "Hard session limit (forces reset within one business day)"
+  type        = number
+  default     = 28800
+}
+
 variable "tags" {
   description = "Tags for awscc-managed resources (awscc does not inherit aws provider default_tags)"
   type        = map(string)

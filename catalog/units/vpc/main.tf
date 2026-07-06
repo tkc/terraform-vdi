@@ -132,29 +132,27 @@ resource "aws_security_group" "workspaces" {
   }
 }
 
-resource "aws_security_group" "managed_ad" {
-  name        = "vdi-managed-ad"
-  description = "AWS Managed Microsoft AD"
+# Image Builder のビルドインスタンス専用 SG（WorkSpaces 用 SG と役割分離）。
+# 必要なのは SSM 経由の制御（VPC エンドポイント 443）と
+# S3（ログ書込・インストーラー取得。Gateway 型のため prefix list 宛の許可が必要）
+resource "aws_security_group" "image_builder" {
+  name        = "vdi-image-builder"
+  description = "Image Builder build instances"
   vpc_id      = aws_vpc.main.id
 
-  ingress {
-    from_port       = 389
-    to_port         = 389
-    protocol        = "tcp"
-    security_groups = [aws_security_group.workspaces.id]
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+    description = "HTTPS to VPC interface endpoints (SSM etc.)"
   }
 
-  ingress {
-    from_port       = 636
-    to_port         = 636
+  egress {
+    from_port       = 443
+    to_port         = 443
     protocol        = "tcp"
-    security_groups = [aws_security_group.workspaces.id]
-  }
-
-  ingress {
-    from_port       = 53
-    to_port         = 53
-    protocol        = "udp"
-    security_groups = [aws_security_group.workspaces.id]
+    prefix_list_ids = [aws_vpc_endpoint.s3.prefix_list_id]
+    description     = "HTTPS to S3 via gateway endpoint (build logs / installers)"
   }
 }
