@@ -1,7 +1,5 @@
 locals {
-  region      = "ap-northeast-1"
-  environment = "prod"
-
+  # region と Environment タグは live/root.hcl が単一情報源
   # ── ネットワーク ──────────────────────────────────────
   vpc_cidr            = "10.10.0.0/16"
   other_account_cidrs = ["10.20.0.0/16"] # 接続先 AWS アカウントの CIDR
