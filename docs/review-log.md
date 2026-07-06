@@ -7,6 +7,41 @@
 
 ---
 
+## #3 2026-07-06 — 観点: ドキュメントの不完全さ
+
+### 今回修正したこと（前回指摘の解消、コミット `fe3a5e1`）
+
+- **2-7 修正済み (HIGH)**: pool_updater に `CreateWorkspaceBundle` ステップを追加。Import → AVAILABLE 待機 → Bundle 作成 → Pool 更新の完全チェーンに書き直し。名前規約ベースの冪等設計で、Lambda 15 分超過時は EventBridge 非同期リトライで続きから再開
+- **2-1 修正済み**: 未使用の `ec2` クライアント削除
+- **2-2 修正済み**: `IngestionProcess` / `ComputeType` を変数化（既定 `BYOL_REGULAR` / `STANDARD`）、環境依存である旨をコメント明記
+- **1-3 修正済み**: WorkSpaces SG の他アカウント向け egress を全ポート → `other_account_ports`（既定 [443]）に縮小
+- 付随: architecture.md のシーケンス図を新チェーン（Bundle 経由）に追随
+
+### 確認事項
+
+- README / architecture.md とコードの乖離
+- デプロイ前提条件の網羅性（初見の人が README だけで plan まで到達できるか）
+- 運用ドキュメント（障害対応・ロールバック手順）の有無
+- CLAUDE.md（エージェント向けハーネス）の情報鮮度
+
+### 気づいた点（未修正 → 次回対応）
+
+| # | 深刻度 | 場所 | 内容 |
+|---|---|---|---|
+| 3-1 | **HIGH** | README | **state バケット（`tfstate-vdi-<account>`）と DynamoDB ロックテーブル（`tfstate-lock-vdi`）の事前作成手順が未記載**。root.hcl が参照するため、初回 `terragrunt plan` はここで必ず失敗する。「デプロイ前に必要な準備」に手順（または bootstrap スクリプト）を追加すべき |
+| 3-2 | MEDIUM | docs/ | 運用 runbook が無い。最低限: ① Lambda 失敗時の手動リカバリ（チェーンの途中再開方法）② Golden Image のロールバック手順（旧 Bundle に戻す）③ EventBridge の手動再実行方法 |
+| 3-3 | LOW | README | `make plan` の AWS 認証方法（AWS_PROFILE / SSO など）が未記載。「AWS 認証が必要」とだけ書かれている |
+| 3-4 | LOW | CLAUDE.md | 定期レビューループ（docs/review-log.md）の存在と書式が未記載。別のエージェントセッションが重複レビューを始めたり、ログ形式を無視する恐れ |
+| 3-5 | INFO | README / stack_vars | 2-7 修正後、`workspaces_bundle_id` は「初期 Bundle」の意味に変わった（以後は Lambda が作る Bundle に自動置換）。この仕様が未記載。新変数 `ingestion_process` / `bundle_compute_type` も stack_vars の例に未掲載 |
+
+### 次回の確認事項
+
+1. **修正**: 3-1（state バケット手順 — デプロイの必須前提）・3-4（CLAUDE.md 追記）・3-5（README 追記）
+2. **修正（余力があれば）**: 3-2（runbook 骨子）・2-4（tgw ルート for_each 化）・1-5（force_destroy = false）
+3. **新規レビュー観点**: 問題の有無（全般 — CI の健全性・ユニット間の outputs/inputs 整合・stack_vars と variables の対応漏れ）— これで 4 観点ローテーション一巡
+
+---
+
 ## #2 2026-07-06 — 観点: コードの読みやすさ
 
 ### 確認事項
