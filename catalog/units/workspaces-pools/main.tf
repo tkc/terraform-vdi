@@ -47,7 +47,7 @@ resource "awscc_workspaces_workspaces_pool" "main" {
   pool_name    = var.pool_name
   bundle_id    = data.aws_workspaces_bundle.windows.id
   directory_id = aws_workspaces_directory.main.id
-  description  = "社内 VDI Pool — 最大同時 ${var.max_user_sessions} セッション"
+  description  = "VDI Pool — 最大同時 ${var.max_user_sessions} セッション"
 
   capacity = {
     desired_user_sessions = var.max_user_sessions # 同時最大セッション数 = 確保容量

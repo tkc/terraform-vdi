@@ -1,6 +1,6 @@
 # terraform-vdi
 
-AWS WorkSpaces Pools による社内 VDI 基盤の Terragrunt IaC。
+AWS WorkSpaces Pools による VDI 基盤の Terragrunt IaC。
 
 - **認証**: Entra ID（SAML 2.0）でログイン、AWS Managed Microsoft AD でドメイン参加・Office 認証
 - **同時利用**: 最大 2 セッション

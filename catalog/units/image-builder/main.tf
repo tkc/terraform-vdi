@@ -1,7 +1,7 @@
 # ══════════════════════════════════════════════════════════════════
 # unit: image-builder — Golden Image のビルドライン
 #
-# Windows Server 2022 ベース + 社内アプリ + Windows Update を焼き込んだ
+# Windows Server 2022 ベース + 業務アプリ + Windows Update を焼き込んだ
 # AMI を作る。パイプラインのスケジュールは意図的に無効化してあり、
 # 起動は golden-image-updater の Lambda からのみ行う（イベント駆動）。
 # ビルドはプライベートサブネット内（インターネット不要）。
@@ -23,7 +23,7 @@ data "aws_ami" "windows_base" {
 
 resource "aws_imagebuilder_component" "app_install" {
   name        = "vdi-app-install"
-  description = "社内アプリケーションのインストールと設定"
+  description = "業務アプリケーションのインストールと設定"
   platform    = "Windows"
   version     = "1.0.0"
 
@@ -38,7 +38,7 @@ resource "aws_imagebuilder_component" "app_install" {
             action = "ExecutePowerShell"
             inputs = {
               commands = [
-                # 社内アプリのインストールスクリプトをここに追加
+                # 業務アプリのインストールスクリプトをここに追加
                 "Write-Host 'Installing applications...'",
                 # 例: S3 からインストーラーを取得（VPC エンドポイント経由）
                 # "Read-S3Object -BucketName company-software -Key installer.exe -File C:\\installer.exe",

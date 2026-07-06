@@ -1,12 +1,12 @@
 # アーキテクチャ
 
-AWS WorkSpaces Pools による社内 VDI 基盤。Entra ID 認証・閉鎖網接続・Golden Image 自動更新を Terragrunt で管理する。
+AWS WorkSpaces Pools による VDI 基盤。Entra ID 認証・閉鎖網接続・Golden Image 自動更新を Terragrunt で管理する。
 
 ## 要件と実現方式の対応
 
 | 要件 | 実現方式 | ユニット |
 |---|---|---|
-| 社内 VDI | WorkSpaces Pools（セッションベース） | `workspaces-pools` |
+| VDI | WorkSpaces Pools（セッションベース） | `workspaces-pools` |
 | 同時利用は最大 2 名 | Pool capacity = 2 セッション | `workspaces-pools` |
 | ログインは Entra ID 経由 | SAML 2.0 フェデレーション | `saml-provider` |
 | Office 認証（Active Directory） | AWS Managed Microsoft AD にドメイン参加 | `managed-ad` |
@@ -92,7 +92,7 @@ sequenceDiagram
     MW->>EB1: 実行完了イベント (SUCCESS)
     EB1->>L1: 起動
     L1->>IB: StartImagePipelineExecution
-    IB->>IB: ベース AMI + 社内アプリ + Windows Update<br/>→ 新 AMI 作成・検証
+    IB->>IB: ベース AMI + 業務アプリ + Windows Update<br/>→ 新 AMI 作成・検証
     IB->>EB2: Image State Change (AVAILABLE)
     EB2->>L2: 起動
     L2->>WS: ImportWorkspaceImage → UpdateWorkspacesPool
