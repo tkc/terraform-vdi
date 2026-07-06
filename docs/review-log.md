@@ -7,6 +7,44 @@
 
 ---
 
+## #4 2026-07-06 — 観点: 問題の有無（全般整合性）
+
+### 今回修正したこと（前回指摘の解消、コミット `45d1eac`）
+
+- **3-1 修正済み (HIGH)**: README に state バケット + DynamoDB ロックテーブルの作成コマンドを追加（初回 plan の必須前提）
+- **3-3 修正済み**: `make plan` の AWS 認証方法（AWS_PROFILE / SSO）を明記
+- **3-4 修正済み**: CLAUDE.md に定期レビューループの存在・ローテーション・書式を追記
+- **3-5 修正済み**: README に `workspaces_bundle_id` =「初期 Bundle」の意味と自動更新の関係、新変数 2 つを記載
+- **1-5 修正済み**: ログバケット `force_destroy = false`（監査証跡保護）
+- **2-4 修正済み**: tgw ルートを `for_each + setproduct` 化（CIDR 変更時の全ルート再作成を防止）
+
+### 確認事項
+
+- stack が参照する outputs とユニット定義の整合（機械的照合）
+- default なし変数が stack inputs で全て供給されているか
+- SSM Maintenance Window のターゲット実在性
+- provider 最小バージョン宣言と実使用機能の整合
+- CI の健全性
+
+### 気づいた点（未修正 → 次回対応）
+
+| # | 深刻度 | 場所 | 内容 |
+|---|---|---|---|
+| 4-1 | **HIGH** | `ssm-patch` / `image-builder` | **Maintenance Window のターゲット（tag `Purpose=ImageBuilder-VDI`）に一致するインスタンスがどこにも存在しない**。infrastructure_configuration は resource_tags を付けておらず、ビルドインスタンスはビルド中しか生きていない。つまり週次パッチは空振りし、チェーンは実質「週次スケジューラ」として動くだけ（実際の更新はレシピ内の update-windows コンポーネントが担っている）。修正案: (a) MW を廃止して EventBridge Scheduler から直接パイプラインを起動する簡素化（機能は同等・部品 2 つ削減）、または (b) 常駐のパッチ基準インスタンスを立ててタグ付け。(a) を推奨 |
+| 4-2 | MEDIUM | `image-builder/main.tf` | レシピ version が `1.0.0` 固定。コンポーネントやレシピを変更するたびに手動バージョンアップが必要（忘れると apply エラー）。運用注意点としてコメント + README 記載が必要 |
+| 4-3 | LOW | `catalog/units/*/versions.tf` | `data.aws_region.current.region` 属性は provider 5.86 以降の機能だが、required_providers は `>= 5.50` を宣言。古い 5.x に明示ピンした利用者の validate が壊れる。最小バージョンを実要件（>= 5.86）に引き上げるべき |
+| 4-4 | INFO | `image-builder` | ビルドインスタンスが WorkSpaces 用 SG（sg_workspaces_id）を借用。現状の egress で動作はするが、役割の異なるリソースの SG 共有は将来の変更で壊れやすい。専用 SG の分離が望ましい |
+| 4-5 | INFO | 整合性チェック結果 | stack 参照 outputs 9 件すべてユニット側に定義あり・default なし変数はすべて stack inputs で供給・CI 直近 2 ラン green。構造的な不整合なし |
+
+### 次回の確認事項
+
+1. **修正（最優先）**: 4-1 — 推奨案 (a) で MW + patch-baseline を EventBridge Scheduler 起動に簡素化（architecture.md の更新込み）
+2. **修正**: 4-3（provider 最小バージョン）・4-2（レシピバージョンの注意書き）
+3. **残バックログ**: 3-2（runbook）・1-4（pool_updater IAM の Resource 絞り込み）・1-6（state アクセス制御の README 記載）・1-7（VPC エンドポイントポリシー）・2-3（タイムアウト変数化）・2-5（validation）・2-6（description）
+4. **新規レビュー観点**: セキュリティ（2 巡目 — 修正済み項目の再確認 + Lambda 権限・S3 ポリシー・タグ戦略）
+
+---
+
 ## #3 2026-07-06 — 観点: ドキュメントの不完全さ
 
 ### 今回修正したこと（前回指摘の解消、コミット `fe3a5e1`）
