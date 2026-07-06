@@ -10,10 +10,41 @@
 
 | # | 深刻度 | 内容 | 初出 |
 |---|---|---|---|
-| 1-4 | MEDIUM | pool_updater Lambda IAM の `Resource "*"` 絞り込み（imagebuilder:GetImage は image ARN プレフィックスに、workspaces 系は Pool/Bundle ARN に） | #1 |
 | 1-7 | INFO | VPC エンドポイントポリシー未設定（デフォルト全許可）。多層防御として絞る余地 | #1 |
-| 2-3 | LOW | セッションタイムアウト（3600/1800/28800）のハードコード。変数化して stack_vars へ | #2 |
-| 4-4 | INFO | ビルドインスタンスが WorkSpaces 用 SG を借用。専用 SG 分離が望ましい | #4 |
+| 9-1 | HIGH（要検証） | 閉鎖網で update-windows が Microsoft Update に到達できない疑い。対応候補: (a) ビルド専用 NAT + FQDN 制限 (b) WSUS (c) ベース AMI の月次更新へ依存し update-windows を外す | #9 |
+| 8-2 | MEDIUM（要検証） | WorkSpaces ディレクトリ登録型（PERSONAL/POOLS）の実機確認 | #8 |
+
+---
+
+## #9 2026-07-06 — 観点: セキュリティ（3 巡目・SG 整理後の再確認）
+
+### 今回修正したこと（前回指摘の解消、コミット `13be263`）
+
+- **8-1 修正済み (MEDIUM)**: 未アタッチの `managed_ad` SG を削除（誤解を生む死にリソースだった）
+- **4-4 修正済み**: ビルドインスタンス専用 SG を新設し WorkSpaces SG との共有を解消。**S3 Gateway エンドポイント向け prefix list egress を追加**（旧構成の vpc_cidr 縛りでは S3 に届かずログ書込が失敗していた疑いも同時解消）
+- **1-4 修正済み (MEDIUM)**: Lambda IAM を絞り込み — `imagebuilder:GetImage` = 自パイプラインの image ARN プレフィックス、`UpdateWorkspacesPool` = 自 Pool ARN のみ。動的リソースのみ `"*"` 維持（理由コメント付き）
+- **2-3 修正済み**: セッションタイムアウト 3 値を変数化
+- **8-2 記録済み**: 引き継ぎ表に要検証 2 行（ディレクトリ登録型・update-windows 到達性）を追加
+
+### 確認事項
+
+- SG 整理後の最小権限の過不足（絞りすぎ含む）
+- ドメイン参加に必要な AD 通信ポートセット
+- 閉鎖網と update-windows コンポーネントの整合性
+
+### 気づいた点（未修正 → 次回対応）
+
+| # | 深刻度 | 場所 | 内容 |
+|---|---|---|---|
+| 9-1 | **HIGH（要検証）** | `image-builder` レシピ × 閉鎖網 | **update-windows コンポーネントが Microsoft Update に到達できない疑い**。VPC に IGW/NAT が無く、ビルド SG の egress も VPC 内 + S3 のみ。週次ビルドのパッチ適用が失敗するか「更新ゼロで成功」する可能性。対応候補: (a) ビルド専用サブネット + NAT + FQDN 制限（Network Firewall）(b) WSUS / オフライン更新 (c) **ベース AMI（Amazon 月次更新）への依存に切り替え update-windows を外す**（閉鎖網と最も整合・推奨）。設計判断が必要なため引き継ぎ表に記録済み |
+| 9-2 | **HIGH** | `vpc` workspaces SG | **ドメイン参加に必要なポートが不足**。現行 egress は 443/389/636 + 他アカウントのみで、**DNS(53 TCP/UDP)・Kerberos(88)・RPC(135 + 動的)・SMB(445)・NTP(123) が無い**。このままではドメイン参加・GPO 適用・Office の AD 連携が失敗する。AD 通信ポートセットの egress 追加が必要 |
+| 9-3 | INFO | 再確認結果 | SG 整理後の構成に退行なし・Lambda IAM の絞り込み反映確認・Trivy HIGH/CRITICAL 0 件継続 |
+
+### 次回の確認事項
+
+1. **修正（最優先）**: 9-2 — workspaces SG に AD 必須ポートセット（53/88/123/135/445/49152-65535）の egress を追加
+2. **判断待ち**: 9-1 は設計判断（推奨は案 c）。ユーザー確認が取れるまで引き継ぎ表で保留
+3. **新規レビュー観点**: コードの読みやすさ（3 巡目 — SG 整理・IAM 分割後の可読性・runbook とコードの整合）
 
 ---
 
