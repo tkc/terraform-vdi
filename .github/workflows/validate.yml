@@ -23,33 +23,18 @@ jobs:
         with:
           terraform_version: "~1.6"
 
-      - name: Setup Terragrunt
-        run: |
-          curl -Lo /usr/local/bin/terragrunt \
-            https://github.com/gruntwork-io/terragrunt/releases/latest/download/terragrunt_linux_amd64
-          chmod +x /usr/local/bin/terragrunt
-
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v4
 
+      # ローカルの `make check` と同一チェック（単一情報源 = Makefile）
       - name: terraform fmt check
-        run: terraform fmt -check -recursive catalog/
+        run: make fmt-check
 
       - name: terraform validate (each unit)
-        run: |
-          for dir in catalog/units/*/; do
-            echo "=== Validating $dir ==="
-            terraform -chdir="$dir" init -backend=false
-            terraform -chdir="$dir" validate
-          done
+        run: make validate
 
       - name: tflint
-        run: |
-          tflint --init
-          for dir in catalog/units/*/; do
-            echo "=== TFLint $dir ==="
-            tflint --chdir="$dir"
-          done
+        run: make lint
 
   security-scan:
     name: trivy security scan
@@ -58,13 +43,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # trivy-action@master は不安定なため CLI を直接インストール（ローカルと同一手順）
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sh -s -- -b /usr/local/bin
+
       - name: Trivy IaC scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: config
-          scan-ref: catalog/
-          severity: HIGH,CRITICAL
-          exit-code: 1
+        run: trivy config --severity HIGH,CRITICAL --exit-code 1 catalog/
 
   plan:
     name: terragrunt plan (dry-run)
