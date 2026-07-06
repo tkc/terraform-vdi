@@ -18,7 +18,7 @@ resource "aws_workspaces_directory" "main" {
   }
 
   workspace_creation_properties {
-    enable_internet_access              = false  # 閉鎖網のためインターネット不可
+    enable_internet_access              = false # 閉鎖網のためインターネット不可
     enable_maintenance_mode             = true
     user_enabled_as_local_administrator = false
   }
@@ -31,38 +31,30 @@ resource "aws_workspaces_directory" "main" {
   }
 }
 
-resource "aws_workspaces_pool" "main" {
-  name         = var.pool_name
+# WorkSpaces Pools は AWS provider 未対応のため AWSCC (Cloud Control) provider を使用
+resource "awscc_workspaces_workspaces_pool" "main" {
+  pool_name    = var.pool_name
   bundle_id    = data.aws_workspaces_bundle.windows.id
   directory_id = aws_workspaces_directory.main.id
   description  = "社内 VDI Pool — 最大同時 ${var.max_user_sessions} セッション"
 
-  capacity {
-    desired_user_sessions = var.desired_user_sessions
-    max_user_sessions     = var.max_user_sessions
-    min_user_sessions     = 0
+  capacity = {
+    desired_user_sessions = var.max_user_sessions # 同時最大セッション数 = 確保容量
   }
 
-  application_settings {
-    enabled        = true
+  application_settings = {
+    status         = "ENABLED" # アプリ設定の永続化
     settings_group = var.pool_name
   }
 
-  storage_connectors {
-    connector_type = "HOMEFOLDERS"
+  timeout_settings = {
+    disconnect_timeout_in_seconds      = 3600  # 切断後 1 時間でセッション終了
+    idle_disconnect_timeout_in_seconds = 1800  # アイドル 30 分で切断
+    max_user_duration_in_seconds       = 28800 # 最大 8 時間
   }
 
   lifecycle {
     # Golden Image の自動更新で bundle_id が変わるため ignore
     ignore_changes = [bundle_id]
   }
-}
-
-resource "aws_workspaces_pool_session" "main" {
-  pool_id = aws_workspaces_pool.main.id
-
-  # セッションタイムアウト設定
-  disconnect_timeout_in_seconds      = 3600   # 切断後 1 時間でセッション終了
-  idle_disconnect_timeout_in_seconds = 1800   # アイドル 30 分で切断
-  max_user_duration_in_seconds       = 28800  # 最大 8 時間
 }

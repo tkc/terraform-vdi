@@ -1,8 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Entra ID (Azure AD) の SAML Federation Metadata XML をここに貼り付ける -->
-<!-- 取得先: Azure Portal > Enterprise Applications > WorkSpaces > Single sign-on > Federation Metadata XML -->
-<!-- PLACEHOLDER: 本番環境では実際の XML で置き換えること -->
+<!--
+  ═══════════════════════════════════════════════════════════════════════════
+  PLACEHOLDER — Entra ID (Azure AD) SAML Federation Metadata XML
+  ═══════════════════════════════════════════════════════════════════════════
+
+  本番環境ではこのファイル全体を Entra ID が生成した実際の XML で置き換えること。
+  実 XML は .gitignore 済みのため、置き換えてもコミットには含まれない（意図的）。
+
+  ── 取得手順 ──────────────────────────────────────────────────────────────
+  1. Azure Portal にサインイン
+  2. Microsoft Entra ID > Enterprise applications > New application
+  3. 「Amazon WorkSpaces」テンプレートを検索して追加
+     （なければ「Create your own application」で Non-gallery アプリを作成）
+  4. 作成したアプリ > Single sign-on > SAML を選択
+  5. Basic SAML Configuration を設定:
+       Identifier (Entity ID):  https://signin.aws.amazon.com/saml
+       Reply URL (ACS URL):     https://signin.aws.amazon.com/saml
+       Relay State:             WorkSpaces の登録コードに応じた URL
+  6. Attributes & Claims で以下を設定:
+       Role:            IAM ロール ARN,SAML プロバイダー ARN のペア
+       RoleSessionName: user.userprincipalname
+  7. SAML Certificates セクションの「Federation Metadata XML」をダウンロード
+  8. ダウンロードした XML でこのファイルを丸ごと置き換える
+  9. terragrunt apply（saml-provider ユニット）を人間の承認のもとで実行
+
+  ── 注意 ──────────────────────────────────────────────────────────────────
+  - この XML には署名証明書が含まれる。公開リポジトリに置かないこと
+  - 証明書は既定で 3 年で失効する。失効前に再取得してローテーションすること
+  - テナント ID・アプリ ID を含むため、社外共有時はマスキングすること
+
+  以下はスキーマ検証を通すためのダミー構造。実データではない。
+  ═══════════════════════════════════════════════════════════════════════════
+-->
 <EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
-                  entityID="https://sts.windows.net/TENANT-ID/">
-  <!-- Entra ID が生成した XML をここに配置 -->
+                  entityID="https://sts.windows.net/00000000-0000-0000-0000-000000000000/">
+  <IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+    <KeyDescriptor use="signing">
+      <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+        <X509Data>
+          <X509Certificate>PLACEHOLDER-REPLACE-WITH-REAL-METADATA-FROM-ENTRA-ID</X509Certificate>
+        </X509Data>
+      </KeyInfo>
+    </KeyDescriptor>
+    <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+                         Location="https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/saml2"/>
+    <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+                         Location="https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/saml2"/>
+  </IDPSSODescriptor>
 </EntityDescriptor>

@@ -2,8 +2,8 @@ output "directory_id" {
   value = aws_directory_service_directory.main.id
 }
 
-output "dns_ip_addrs" {
-  value = aws_directory_service_directory.main.dns_ip_addrs
+output "dns_ip_addresses" {
+  value = aws_directory_service_directory.main.dns_ip_addresses
 }
 
 output "alias" {

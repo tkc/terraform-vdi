@@ -18,6 +18,5 @@ locals {
   workspaces_bundle_id  = "wsb-gk1wpk43z"  # 要確認: コンソールで使用可能な Bundle ID
   pool_name             = "vdi-pool-prod"
   workspace_access_url  = "workspaces.example.com"
-  max_user_sessions     = 2
-  desired_user_sessions = 0  # 未使用時はゼロ（コスト最適化）
+  max_user_sessions = 2 # 同時最大 2 セッション = 確保容量
 }

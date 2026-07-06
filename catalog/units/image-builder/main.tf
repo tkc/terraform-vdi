@@ -77,17 +77,17 @@ resource "aws_imagebuilder_image_recipe" "vdi" {
 
   # Windows Update コンポーネント（AWS 提供）
   component {
-    component_arn = "arn:aws:imagebuilder:${data.aws_region.current.name}:aws:component/update-windows/x.x.x"
+    component_arn = "arn:aws:imagebuilder:${data.aws_region.current.region}:aws:component/update-windows/x.x.x"
   }
 }
 
 resource "aws_imagebuilder_infrastructure_configuration" "vdi" {
-  name                  = "vdi-image-builder-infra"
-  description           = "プライベートサブネット内でビルド（インターネット不要）"
-  instance_profile_name = aws_iam_instance_profile.image_builder.name
-  instance_types        = ["m5.large"]
-  subnet_id             = var.subnet_id
-  security_group_ids    = [var.security_group_id]
+  name                          = "vdi-image-builder-infra"
+  description                   = "プライベートサブネット内でビルド（インターネット不要）"
+  instance_profile_name         = aws_iam_instance_profile.image_builder.name
+  instance_types                = ["m5.large"]
+  subnet_id                     = var.subnet_id
+  security_group_ids            = [var.security_group_id]
   terminate_instance_on_failure = true
 
   logging {
@@ -103,7 +103,7 @@ resource "aws_imagebuilder_distribution_configuration" "vdi" {
   description = "VDI Golden Image の配布設定"
 
   distribution {
-    region = data.aws_region.current.name
+    region = data.aws_region.current.region
 
     ami_distribution_configuration {
       name        = "vdi-golden-image-{{ imagebuilder:buildDate }}"
@@ -126,7 +126,7 @@ resource "aws_imagebuilder_image_pipeline" "vdi" {
 
   # スケジュールはオフ（SSM Maintenance Window 完了後に Lambda から起動）
   schedule {
-    schedule_expression                = "cron(0 0 1 1 ? *)"  # ダミー（実質無効）
+    schedule_expression                = "cron(0 0 1 1 ? *)" # ダミー（実質無効）
     pipeline_execution_start_condition = "EXPRESSION_MATCH_ONLY"
   }
 
@@ -163,6 +163,11 @@ resource "aws_iam_instance_profile" "image_builder" {
 }
 
 # ビルドログ用 S3 バケット
+resource "aws_kms_key" "image_builder_logs" {
+  description         = "CMK for VDI Image Builder log bucket"
+  enable_key_rotation = true
+}
+
 resource "aws_s3_bucket" "image_builder_logs" {
   bucket        = "vdi-image-builder-logs-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
@@ -173,7 +178,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "image_builder_log
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.image_builder_logs.arn
     }
   }
 }

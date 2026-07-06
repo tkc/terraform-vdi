@@ -1,9 +1,9 @@
 output "pool_id" {
-  value = aws_workspaces_pool.main.id
+  value = awscc_workspaces_workspaces_pool.main.pool_id
 }
 
 output "pool_arn" {
-  value = aws_workspaces_pool.main.arn
+  value = awscc_workspaces_workspaces_pool.main.pool_arn
 }
 
 output "directory_id" {

@@ -37,7 +37,7 @@ resource "aws_lambda_function" "pool_updater" {
   runtime          = "python3.12"
   filename         = data.archive_file.pool_updater.output_path
   source_code_hash = data.archive_file.pool_updater.output_base64sha256
-  timeout          = 300  # 画像インポートに時間がかかるため
+  timeout          = 300 # 画像インポートに時間がかかるため
 
   environment {
     variables = {

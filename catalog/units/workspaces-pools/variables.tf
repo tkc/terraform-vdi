@@ -24,13 +24,7 @@ variable "workspace_access_url" {
 }
 
 variable "max_user_sessions" {
-  description = "Maximum concurrent user sessions"
+  description = "Maximum concurrent user sessions (= provisioned pool capacity)"
   type        = number
   default     = 2
-}
-
-variable "desired_user_sessions" {
-  description = "Desired running sessions (0 = scale to zero when idle)"
-  type        = number
-  default     = 0
 }

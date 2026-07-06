@@ -34,11 +34,11 @@ resource "aws_ssm_default_patch_baseline" "windows" {
 
 # Image Builder が使う EC2 インスタンスに適用する Maintenance Window
 resource "aws_ssm_maintenance_window" "golden_image" {
-  name              = "vdi-golden-image-update"
-  description       = "毎週日曜 AM2:00 に Windows Update を適用して Golden Image を更新"
-  schedule          = "cron(0 2 ? * SUN *)"
-  duration          = 4
-  cutoff            = 1
+  name                       = "vdi-golden-image-update"
+  description                = "毎週日曜 AM2:00 に Windows Update を適用して Golden Image を更新"
+  schedule                   = "cron(0 2 ? * SUN *)"
+  duration                   = 4
+  cutoff                     = 1
   allow_unassociated_targets = false
 }
 

@@ -56,7 +56,6 @@ unit "workspaces_pools" {
     pool_name             = local.vars.locals.pool_name
     workspace_access_url  = local.vars.locals.workspace_access_url
     max_user_sessions     = local.vars.locals.max_user_sessions
-    desired_user_sessions = local.vars.locals.desired_user_sessions
   }
 }
 
