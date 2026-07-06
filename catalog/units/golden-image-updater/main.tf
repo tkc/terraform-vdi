@@ -49,11 +49,15 @@ resource "aws_lambda_function" "pool_updater" {
   runtime          = "python3.12"
   filename         = data.archive_file.pool_updater.output_path
   source_code_hash = data.archive_file.pool_updater.output_base64sha256
-  timeout          = 300 # 画像インポートに時間がかかるため
+  # 画像取り込みの待機があるため Lambda 上限いっぱい。
+  # 足りない分は冪等リトライ（EventBridge 非同期×2）で続きから再開する
+  timeout = 900
 
   environment {
     variables = {
-      WORKSPACES_POOL_ID = var.workspaces_pool_id
+      WORKSPACES_POOL_ID  = var.workspaces_pool_id
+      INGESTION_PROCESS   = var.ingestion_process
+      BUNDLE_COMPUTE_TYPE = var.bundle_compute_type
     }
   }
 }
@@ -183,6 +187,10 @@ resource "aws_iam_role_policy" "lambda_pool_updater" {
           "imagebuilder:GetImage",
           "workspaces:UpdateWorkspacesPool",
           "workspaces:ImportWorkspaceImage",
+          "workspaces:DescribeWorkspaceImages",
+          "workspaces:CreateWorkspaceBundle",
+          "workspaces:DescribeWorkspaceBundles",
+          # ec2:* の 2 つは ImportWorkspaceImage の内部要件（AMI 共有のため）
           "ec2:DescribeImages",
           "ec2:ModifyImageAttribute",
         ]

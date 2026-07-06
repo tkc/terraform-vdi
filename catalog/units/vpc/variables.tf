@@ -15,3 +15,9 @@ variable "other_account_cidrs" {
   type        = list(string)
   default     = []
 }
+
+variable "other_account_ports" {
+  description = "TCP ports allowed to other AWS accounts via TGW (least privilege)"
+  type        = list(number)
+  default     = [443]
+}

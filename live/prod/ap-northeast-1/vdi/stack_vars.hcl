@@ -4,7 +4,8 @@ locals {
 
   # ── ネットワーク ──────────────────────────────────────
   vpc_cidr            = "10.10.0.0/16"
-  other_account_cidrs = ["10.20.0.0/16"]  # 接続先 AWS アカウントの CIDR
+  other_account_cidrs = ["10.20.0.0/16"] # 接続先 AWS アカウントの CIDR
+  other_account_ports = [443]            # 要確認: 接続先サービスの必要ポート
 
   # ── Transit Gateway ────────────────────────────────────
   # 他アカウントが所有し RAM 共有された TGW の ID

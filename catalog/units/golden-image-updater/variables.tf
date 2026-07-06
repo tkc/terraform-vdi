@@ -17,3 +17,15 @@ variable "image_arn_prefix" {
   description = "Image Builder image ARN prefix to filter EventBridge on (prevents pool updates from unrelated pipelines)"
   type        = string
 }
+
+variable "ingestion_process" {
+  description = "WorkSpaces image ingestion process (license/GPU dependent, e.g. BYOL_REGULAR, BYOL_GRAPHICS_G4DN)"
+  type        = string
+  default     = "BYOL_REGULAR"
+}
+
+variable "bundle_compute_type" {
+  description = "Compute type for the auto-created WorkSpaces bundle (e.g. STANDARD, PERFORMANCE, GRAPHICS_G4DN)"
+  type        = string
+  default     = "STANDARD"
+}

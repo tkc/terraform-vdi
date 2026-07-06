@@ -18,6 +18,7 @@ unit "vpc" {
     vpc_cidr            = local.vars.locals.vpc_cidr
     region              = local.vars.locals.region
     other_account_cidrs = local.vars.locals.other_account_cidrs
+    other_account_ports = local.vars.locals.other_account_ports
   }
 }
 

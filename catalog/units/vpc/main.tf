@@ -119,12 +119,16 @@ resource "aws_security_group" "workspaces" {
     description = "LDAPS to Managed AD"
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
-    cidr_blocks = var.other_account_cidrs
-    description = "Outbound to other AWS accounts via TGW"
+  # 接続先サービスの必要ポートのみ許可（全ポート開放にしない）
+  dynamic "egress" {
+    for_each = toset([for p in var.other_account_ports : tostring(p)])
+    content {
+      from_port   = tonumber(egress.value)
+      to_port     = tonumber(egress.value)
+      protocol    = "tcp"
+      cidr_blocks = var.other_account_cidrs
+      description = "Port ${egress.value} to other AWS accounts via TGW"
+    }
   }
 }
 

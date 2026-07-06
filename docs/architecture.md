@@ -95,11 +95,14 @@ sequenceDiagram
     IB->>IB: ベース AMI + 業務アプリ + Windows Update<br/>→ 新 AMI 作成・検証
     IB->>EB2: Image State Change (AVAILABLE)
     EB2->>L2: 起動
-    L2->>WS: ImportWorkspaceImage → UpdateWorkspacesPool
+    L2->>WS: ImportWorkspaceImage（取り込み・冪等）
+    L2->>WS: AVAILABLE まで待機
+    L2->>WS: CreateWorkspaceBundle → UpdateWorkspacesPool
     Note over WS: 新セッションから新イメージが適用される
 ```
 
 - 更新は**完全自動**（人間の承認ゲートなし）。承認制にする場合は L1 の前に SNS + 手動承認ステップを挿入する
+- AMI は直接 Pool に適用できないため、**Image 取り込み → Bundle 作成**の 2 段を Lambda が冪等に実行する。取り込みが Lambda の 15 分を超える場合は EventBridge の非同期リトライ（最大 2 回）で続きから再開。それでも足りない環境は Step Functions 化を検討
 - パッチ判定基準: Critical/Security は 7 日後自動承認、その他 Updates は 14 日後（`ssm-patch` の Patch Baseline）
 - `workspaces-pools` の `lifecycle.ignore_changes = [bundle_id]` により、Lambda による画像更新を Terraform が巻き戻さない
 
