@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Entra ID (Azure AD) の SAML Federation Metadata XML をここに貼り付ける -->
+<!-- 取得先: Azure Portal > Enterprise Applications > WorkSpaces > Single sign-on > Federation Metadata XML -->
+<!-- PLACEHOLDER: 本番環境では実際の XML で置き換えること -->
+<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+                  entityID="https://sts.windows.net/TENANT-ID/">
+  <!-- Entra ID が生成した XML をここに配置 -->
+</EntityDescriptor>

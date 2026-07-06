@@ -1,0 +1,97 @@
+name: Terraform Validate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write   # OIDC for AWS
+
+jobs:
+  validate:
+    name: terraform validate + tflint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.6"
+
+      - name: Setup Terragrunt
+        run: |
+          curl -Lo /usr/local/bin/terragrunt \
+            https://github.com/gruntwork-io/terragrunt/releases/latest/download/terragrunt_linux_amd64
+          chmod +x /usr/local/bin/terragrunt
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: terraform fmt check
+        run: terraform fmt -check -recursive catalog/
+
+      - name: terraform validate (each unit)
+        run: |
+          for dir in catalog/units/*/; do
+            echo "=== Validating $dir ==="
+            terraform -chdir="$dir" init -backend=false
+            terraform -chdir="$dir" validate
+          done
+
+      - name: tflint
+        run: |
+          tflint --init
+          for dir in catalog/units/*/; do
+            echo "=== TFLint $dir ==="
+            tflint --chdir="$dir"
+          done
+
+  security-scan:
+    name: trivy security scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy IaC scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: catalog/
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
+  plan:
+    name: terragrunt plan (dry-run)
+    runs-on: ubuntu-latest
+    # Plan は AWS 認証が必要なため、認証情報が設定されている場合のみ実行
+    if: ${{ vars.AWS_ROLE_ARN != '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ap-northeast-1
+
+      - name: Setup Terraform & Terragrunt
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.6"
+
+      - run: |
+          curl -Lo /usr/local/bin/terragrunt \
+            https://github.com/gruntwork-io/terragrunt/releases/latest/download/terragrunt_linux_amd64
+          chmod +x /usr/local/bin/terragrunt
+
+      - name: terragrunt run-all plan
+        run: |
+          cd live/prod/ap-northeast-1/vdi
+          terragrunt run-all plan --terragrunt-non-interactive 2>&1
