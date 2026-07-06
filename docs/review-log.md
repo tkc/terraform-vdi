@@ -16,6 +16,36 @@
 
 ---
 
+## #10 2026-07-06 — 観点: コードの読みやすさ（3 巡目）
+
+### 今回修正したこと（前回指摘の解消、コミット `86a61bb`）
+
+- **9-2 修正済み (HIGH)**: workspaces SG に AD 必須ポートセットを追加（DNS 53 / Kerberos 88・464 / NTP 123 / RPC 135 + 動的 49152-65535 / SMB 445 / Global Catalog 3268-3269）。既存 LDAP/LDAPS も含め宣言的な `local.ad_ports` マップに統合。これまでドメイン参加・GPO・Office の AD 連携が成立しない構成だった
+- **9-1 保留（設計判断待ち）**: update-windows の閉鎖網到達性。選択肢 3 案を引き継ぎ表に記録済み。ユーザー判断が出たら実装
+
+### 確認事項
+
+- runbook のコマンド例とコードのリソース名整合
+- 設定値の単一情報源（region / environment の二重管理）
+- SG・IAM 分割後の可読性
+
+### 気づいた点（未修正 → 次回対応）
+
+| # | 深刻度 | 場所 | 内容 |
+|---|---|---|---|
+| 10-1 | LOW | `vpc/variables.tf` | `region` 変数（default: ap-northeast-1）が root.hcl の region と**二重管理**。VPC エンドポイントの service_name は `data.aws_region` で導出でき、変数ごと削除できる |
+| 10-2 | LOW | stack_vars | local `environment = "prod"` が**どこからも参照されていない**（root.hcl の default_tags はハードコード）。削除するか、root.hcl / workspaces-pools の tags と接続して単一情報源にすべき |
+| 10-3 | INFO | runbook 整合結果 | アラーム名・DLQ 名・Lambda 名・パイプライン名・Pool 名のコマンド例はすべて現行コードと一致 |
+| 10-4 | INFO | `workspaces-pools` | タイムアウト 3 変数は unit 既定値で運用中（stack_vars 非公開）。変更需要が出たら stack 配線を追加する（現状は YAGNI で妥当） |
+
+### 次回の確認事項
+
+1. **修正**: 10-1（region 二重管理の解消）・10-2（environment の接続 or 削除）
+2. **保留継続**: 9-1（設計判断待ち）・8-2 / update-windows 到達性（要実機検証）・1-7（価値低）
+3. **新規レビュー観点**: ドキュメントの不完全さ（3 巡目 — AD ポート追加後の architecture.md ネットワーク表・9-1 の判断材料が伝わる形になっているか）
+
+---
+
 ## #9 2026-07-06 — 観点: セキュリティ（3 巡目・SG 整理後の再確認）
 
 ### 今回修正したこと（前回指摘の解消、コミット `13be263`）
