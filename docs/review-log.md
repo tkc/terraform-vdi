@@ -7,6 +7,39 @@
 
 ---
 
+## #6 2026-07-06 — 観点: コードの読みやすさ（2 巡目・簡素化後の取り残し）
+
+### 今回修正したこと（前回指摘の解消、コミット `a5d6a91`）
+
+- **5-1 修正済み (MEDIUM)**: pool_updater に DLQ（SQS・14 日保持・SSE）+ SNS トピック + CloudWatch アラーム 2 本（Lambda Errors / DLQ 滞留）。SNS は CMK 暗号化（Trivy の HIGH 検出に対応。AWS 管理キーだと CloudWatch アラームが発行できない落とし穴も回避）
+- **5-5 修正済み (MEDIUM)**: ビルドインスタンスロールに S3 put + KMS 権限を明示付与（AWS 管理ポリシーのパターン不一致でログが書けなかった疑いに対応）
+- **5-2 修正済み**: ログバケットに TLS 強制ポリシー
+- **5-3 修正済み**: awscc Pool に明示タグ（`tags` 変数・default_tags 非継承対策）
+- **3-2 修正済み (MEDIUM)**: `docs/runbook.md` 新設 — 状況確認 / 手動再実行 / ロールバック / 棚卸し / state ロック解除の 5 章。アラーム説明文と README から参照
+
+### 確認事項
+
+- 削除済み要素（orchestrator / ssm-patch / Maintenance Window）への残存参照
+- stack から参照されない outputs の妥当性
+- コメントの鮮度（簡素化前の記述が残っていないか）
+
+### 気づいた点（未修正 → 次回対応）
+
+| # | 深刻度 | 場所 | 内容 |
+|---|---|---|---|
+| 6-1 | LOW | 各 outputs.tf | stack 未参照の outputs が 8 件。用途があるもの（`saml_role_arn` = Entra ID の Role 属性設定に必要・`dns_ip_addresses` = DNS フォワーダ設定用）と旧設計の名残（`pipeline_arn` / `pipeline_name` は orchestrator 削除で未参照化）が混在。outputs に用途コメントを付けて区別すべき |
+| 6-2 | LOW | architecture.md | #6 で追加した DLQ + アラーム + runbook がまだ構成図・本文に未反映 |
+| 6-3 | INFO | 取り残しチェック結果 | 削除済み要素への残存参照は歴史的注記 1 箇所のみ（意図的・review-log 参照付き）。コード側の取り残しなし。コメント鮮度も問題なし |
+
+### 次回の確認事項
+
+1. **修正**: 6-2（architecture.md へ DLQ/アラーム/runbook 反映）・6-1（outputs 用途コメント）・1-6（state アクセス制御の README 記載）
+2. **修正（余力があれば）**: 2-5（validation）・2-6（description 補完）
+3. **残バックログ**: 1-4（Lambda IAM 絞り込み）・1-7（VPC エンドポイントポリシー）・2-3（タイムアウト変数化）・4-4（ビルド用 SG 分離）
+4. **新規レビュー観点**: ドキュメントの不完全さ（2 巡目 — runbook 追加後の README 導線・引き継ぎ表の鮮度・review-log 自体の肥大化対策）
+
+---
+
 ## #5 2026-07-06 — 観点: セキュリティ（2 巡目）
 
 ### 今回修正したこと（前回指摘の解消、コミット `dcacfd8`）
