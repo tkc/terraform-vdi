@@ -26,6 +26,7 @@
 | 2-4 | LOW | `tgw-attachment/main.tf` | ルートの count 直積（`count.index % ...` / `floor(...)`）が読みにくい。`for_each` + `setproduct` の方が意図が明確 |
 | 2-5 | LOW | `live/.../stack_vars.hcl` | プレースホルダー値（`tgw-XXXX...`）に validation がなく、plan 時に不親切なエラーになる。variables 側に validation を追加して早期に明確なメッセージを出すべき |
 | 2-6 | INFO | 各 variables.tf | 24 変数中 5 個に description がない（managed-ad の vpc_id 等） |
+| 2-7 | **HIGH** | `pool_updater.py:52` | `update_workspaces_pool(BundleId=ws_image_id)` — **イメージ ID を Bundle ID として渡している**。WorkSpaces は Image → Bundle 作成（`create_workspace_bundle`）を挟まないと Pool に適用できないため、自動更新チェーンの最終段が実行時に失敗する可能性が高い。機能バグとして 2-1〜2-6 より優先 |
 
 ### 今回修正したこと
 
@@ -35,8 +36,9 @@
 
 ### 次回の確認事項
 
-1. **修正**: 2-1（dead code）・2-2（IngestionProcess）・1-3（SG 全ポート egress）を修正
-2. **新規レビュー観点**: ドキュメントの不完全さ（README とコードの乖離・architecture.md の未記載事項・引き継ぎ表の鮮度）
+1. **修正（最優先）**: 2-7（Bundle 作成ステップ欠落の機能バグ）
+2. **修正**: 2-1（dead code）・2-2（IngestionProcess）・1-3（SG 全ポート egress）を修正
+3. **新規レビュー観点**: ドキュメントの不完全さ（README とコードの乖離・architecture.md の未記載事項・引き継ぎ表の鮮度）
 
 ## #1 2026-07-06 — 観点: セキュリティ
 
