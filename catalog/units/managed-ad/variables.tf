@@ -9,7 +9,8 @@ variable "ad_password_secret_arn" {
 }
 
 variable "vpc_id" {
-  type = string
+  description = "VPC to deploy the directory into"
+  type        = string
 }
 
 variable "subnet_ids" {

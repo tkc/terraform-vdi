@@ -1,7 +1,11 @@
+# stack 未参照（orchestrator 廃止で TF 内の参照は消えた）。
+# runbook の手動パイプライン実行（aws imagebuilder start-image-pipeline-execution）
+# で使う運用値のため公開を維持
 output "pipeline_arn" {
   value = aws_imagebuilder_image_pipeline.vdi.arn
 }
 
+# stack 未参照。同上（運用 CLI・コンソール確認用）
 output "pipeline_name" {
   value = aws_imagebuilder_image_pipeline.vdi.name
 }

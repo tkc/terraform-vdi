@@ -79,6 +79,8 @@ terragrunt run-all apply
      --billing-mode PAY_PER_REQUEST
    ```
 
+   > ⚠️ **state バケットのアクセス制御**: Terraform state には AD 管理者パスワードが平文で含まれる（provider の既知挙動）。バケットは暗号化済みだが、**バケットポリシーまたは IAM でアクセスをインフラ管理者と CI ロールのみに制限する**こと。
+
 1. **Secrets Manager** に AD 管理者パスワードを登録
 2. **Entra ID** で Enterprise Application (SAML) を作成し、メタデータ XML を `catalog/units/saml-provider/entra-id-metadata.xml` に配置（手順はプレースホルダー内コメント）
 3. `live/prod/ap-northeast-1/vdi/stack_vars.hcl` の **TGW ID / Bundle ID / ドメイン名** を実値に更新

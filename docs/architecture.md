@@ -99,6 +99,7 @@ sequenceDiagram
 - AMI は直接 Pool に適用できないため、**Image 取り込み → Bundle 作成**の 2 段を Lambda が冪等に実行する。取り込みが Lambda の 15 分を超える場合は EventBridge の非同期リトライ（最大 2 回）で続きから再開。それでも足りない環境は Step Functions 化を検討
 - `workspaces-pools` の `lifecycle.ignore_changes = [bundle_id]` により、Lambda による画像更新を Terraform が巻き戻さない
 - **レシピ変更時の注意**: Image Builder のレシピは immutable。コンポーネントや parent_image を変更したら `version` を必ず上げる（上げないと apply が失敗する）
+- **失敗時の最終防衛**: pool_updater には DLQ（SQS・14 日保持）と CloudWatch アラーム 2 本（Lambda Errors / DLQ 滞留 → SNS `vdi-golden-image-alerts`）が付いている。リトライを使い切ったイベントは DLQ に保全され、[runbook.md](runbook.md) の手順で冪等に再実行できる
 
 ## ネットワーク設計
 
@@ -139,6 +140,7 @@ graph LR
 - `terraform apply` は**人間のみ**が実行する。AI エージェントは plan まで（`CLAUDE.md` + `.claude/settings.json` で二重に強制）
 - 検証は `make check`（fmt / validate / tflint / trivy）。CI と同一コマンド
 - AD 管理者パスワードは Secrets Manager 参照のみ。SAML メタデータはリポジトリ外管理
+- 障害対応・ロールバック・棚卸しは [runbook.md](runbook.md) 参照
 
 ## 未設定・引き継ぎ事項
 

@@ -1,5 +1,7 @@
 # Terraform
 .terraform/
+# lock ファイルは意図的に ignore（provider は root.hcl の version 制約で管理。
+# パッチバージョンまで固定したくなったら live 側のみコミットに切り替える）
 .terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
