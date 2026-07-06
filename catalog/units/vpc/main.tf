@@ -90,6 +90,26 @@ resource "aws_security_group" "vpc_endpoints" {
   }
 }
 
+# AD ドメイン参加・GPO・Kerberos 認証に必要な通信ポートセット。
+# LDAP だけではドメイン参加は成立しない（review-log #9-2）
+locals {
+  ad_ports = {
+    dns_tcp      = { from = 53, to = 53, proto = "tcp", desc = "DNS to Managed AD" }
+    dns_udp      = { from = 53, to = 53, proto = "udp", desc = "DNS to Managed AD" }
+    kerberos_tcp = { from = 88, to = 88, proto = "tcp", desc = "Kerberos" }
+    kerberos_udp = { from = 88, to = 88, proto = "udp", desc = "Kerberos" }
+    ntp_udp      = { from = 123, to = 123, proto = "udp", desc = "NTP (time sync for Kerberos)" }
+    rpc_tcp      = { from = 135, to = 135, proto = "tcp", desc = "RPC endpoint mapper" }
+    ldap_tcp     = { from = 389, to = 389, proto = "tcp", desc = "LDAP" }
+    smb_tcp      = { from = 445, to = 445, proto = "tcp", desc = "SMB (GPO / SYSVOL)" }
+    kpasswd_tcp  = { from = 464, to = 464, proto = "tcp", desc = "Kerberos password change" }
+    kpasswd_udp  = { from = 464, to = 464, proto = "udp", desc = "Kerberos password change" }
+    ldaps_tcp    = { from = 636, to = 636, proto = "tcp", desc = "LDAPS" }
+    gc_tcp       = { from = 3268, to = 3269, proto = "tcp", desc = "LDAP Global Catalog" }
+    rpc_dyn_tcp  = { from = 49152, to = 65535, proto = "tcp", desc = "RPC dynamic range" }
+  }
+}
+
 resource "aws_security_group" "workspaces" {
   name        = "vdi-workspaces"
   description = "WorkSpaces Pools instances"
@@ -103,20 +123,16 @@ resource "aws_security_group" "workspaces" {
     description = "HTTPS to VPC endpoints"
   }
 
-  egress {
-    from_port   = 389
-    to_port     = 389
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
-    description = "LDAP to Managed AD"
-  }
-
-  egress {
-    from_port   = 636
-    to_port     = 636
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
-    description = "LDAPS to Managed AD"
+  # AD 通信ポートセット（宛先は VPC 内 = Managed AD の ENI）
+  dynamic "egress" {
+    for_each = local.ad_ports
+    content {
+      from_port   = egress.value.from
+      to_port     = egress.value.to
+      protocol    = egress.value.proto
+      cidr_blocks = [var.vpc_cidr]
+      description = egress.value.desc
+    }
   }
 
   # 接続先サービスの必要ポートのみ許可（全ポート開放にしない）
