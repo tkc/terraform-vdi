@@ -30,6 +30,9 @@ imagebuilder = boto3.client("imagebuilder")
 # BYOL_REGULAR = BYOL の標準デスクトップ。GPU なら BYOL_GRAPHICS_G4DN 等
 INGESTION_PROCESS = os.environ.get("INGESTION_PROCESS", "BYOL_REGULAR")
 BUNDLE_COMPUTE_TYPE = os.environ.get("BUNDLE_COMPUTE_TYPE", "STANDARD")
+# ストレージ容量は ComputeType と有効な組合せである必要がある（Terraform 変数で注入）
+BUNDLE_USER_STORAGE = os.environ.get("BUNDLE_USER_STORAGE", "50")
+BUNDLE_ROOT_STORAGE = os.environ.get("BUNDLE_ROOT_STORAGE", "80")
 
 POLL_INTERVAL_SECONDS = 30
 # タイムアウト前に安全に例外終了するためのマージン
@@ -88,19 +91,22 @@ def wait_until_image_available(image_id: str, context) -> None:
 def find_or_create_bundle(image_id: str, ami_id: str) -> str:
     """冪等: 同名 Bundle があれば再利用。なければ Image から作成する。"""
     name = f"vdi-bundle-{ami_id}"
-    resp = workspaces.describe_workspace_bundles(Owner="SELF")
-    for bundle in resp["Bundles"]:
-        if bundle["Name"] == name:
-            logger.info(f"Reusing existing bundle {bundle['BundleId']}")
-            return bundle["BundleId"]
+    # 自動更新のたびに Bundle が増えるため、必ず全ページ走査する
+    # （1 ページ照合だと既存を見逃し、同名 Create が例外でチェーン停止する）
+    paginator = workspaces.get_paginator("describe_workspace_bundles")
+    for page in paginator.paginate(Owner="SELF"):
+        for bundle in page["Bundles"]:
+            if bundle["Name"] == name:
+                logger.info(f"Reusing existing bundle {bundle['BundleId']}")
+                return bundle["BundleId"]
 
     resp = workspaces.create_workspace_bundle(
         BundleName=name,
         BundleDescription="Auto-created from VDI Golden Image",
         ImageId=image_id,
         ComputeType={"Name": BUNDLE_COMPUTE_TYPE},
-        UserStorage={"Capacity": "50"},
-        RootStorage={"Capacity": "80"},
+        UserStorage={"Capacity": BUNDLE_USER_STORAGE},
+        RootStorage={"Capacity": BUNDLE_ROOT_STORAGE},
     )
     bundle_id = resp["WorkspaceBundle"]["BundleId"]
     logger.info(f"Bundle created: {bundle_id}")

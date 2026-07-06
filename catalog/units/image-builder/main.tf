@@ -2,8 +2,9 @@
 # unit: image-builder — Golden Image のビルドライン
 #
 # Windows Server 2022 ベース + 業務アプリ + Windows Update を焼き込んだ
-# AMI を作る。パイプラインのスケジュールは意図的に無効化してあり、
-# 起動は golden-image-updater の Lambda からのみ行う（イベント駆動）。
+# AMI を作る。パイプラインは週次のネイティブスケジュールで自走し
+# （update-windows コンポーネントが最新パッチを適用）、完成イベントを
+# golden-image-updater が拾って Pool に反映する。
 # ビルドはプライベートサブネット内（インターネット不要）。
 # ══════════════════════════════════════════════════════════════════
 
@@ -75,8 +76,10 @@ resource "aws_imagebuilder_component" "app_install" {
 }
 
 resource "aws_imagebuilder_image_recipe" "vdi" {
-  name         = "vdi-golden-image"
-  description  = "WorkSpaces Pools 用 Windows VDI Golden Image"
+  name        = "vdi-golden-image"
+  description = "WorkSpaces Pools 用 Windows VDI Golden Image"
+  # 注意: レシピは immutable。コンポーネントや parent_image を変更したら
+  # この version を必ず上げること（上げないと apply が失敗する）
   parent_image = data.aws_ami.windows_base.id
   version      = "1.0.0"
 
@@ -128,14 +131,18 @@ resource "aws_imagebuilder_distribution_configuration" "vdi" {
 
 resource "aws_imagebuilder_image_pipeline" "vdi" {
   name                             = "vdi-golden-image-pipeline"
-  description                      = "Windows Update 検知後に自動トリガーされる Golden Image パイプライン"
+  description                      = "毎週 Windows Update を焼き込んで Golden Image を再ビルドするパイプライン"
   image_recipe_arn                 = aws_imagebuilder_image_recipe.vdi.arn
   infrastructure_configuration_arn = aws_imagebuilder_infrastructure_configuration.vdi.arn
   distribution_configuration_arn   = aws_imagebuilder_distribution_configuration.vdi.arn
 
-  # スケジュールはオフ（SSM Maintenance Window 完了後に Lambda から起動）
+  # パイプラインのネイティブスケジュールで毎週再ビルドする。
+  # レシピ内の update-windows コンポーネントが最新パッチを適用するため、
+  # 外部からの「Update 検知」トリガーは不要（旧 SSM Maintenance Window
+  # 構成はターゲット不在で機能していなかった。review-log #4-1 参照）。
+  # Image Builder の cron は UTC: 土曜 17:00 UTC = 日曜 02:00 JST
   schedule {
-    schedule_expression                = "cron(0 0 1 1 ? *)" # ダミー（実質無効）
+    schedule_expression                = "cron(0 17 ? * SAT *)"
     pipeline_execution_start_condition = "EXPRESSION_MATCH_ONLY"
   }
 

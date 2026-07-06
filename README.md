@@ -13,15 +13,14 @@ AWS WorkSpaces Pools による VDI 基盤の Terragrunt IaC。
 
 ```
 catalog/
-├── units/                 # 再利用可能な Terraform ユニット（8 個）
+├── units/                 # 再利用可能な Terraform ユニット（7 個）
 │   ├── vpc/               #   閉鎖網 VPC + VPC エンドポイント
 │   ├── managed-ad/        #   ドメイン参加用 Managed Microsoft AD
 │   ├── tgw-attachment/    #   他アカウントへの Transit Gateway 経路
 │   ├── saml-provider/     #   Entra ID SAML フェデレーション
 │   ├── workspaces-pools/  #   VDI 本体（WorkSpaces Pools）
-│   ├── ssm-patch/         #   Windows Update（毎週日曜 AM2:00）
-│   ├── image-builder/     #   Golden Image ビルドパイプライン
-│   └── golden-image-updater/  # 自動更新の EventBridge + Lambda
+│   ├── image-builder/     #   Golden Image 週次ビルド（日曜 02:00 JST に Windows Update 焼き込み）
+│   └── golden-image-updater/  # AMI 完成 → Pool 反映の EventBridge + Lambda
 └── stacks/vdi-core/       # ユニットの依存関係・配線
 
 live/

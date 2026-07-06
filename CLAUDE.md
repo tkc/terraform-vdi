@@ -27,14 +27,14 @@ CHECKER が全て通るまで完了と報告しない。
 ## アーキテクチャ（3 分で把握する）
 
 ```
-catalog/units/*      再利用可能な Terraform ユニット（8 個）
+catalog/units/*      再利用可能な Terraform ユニット（7 個）
 catalog/stacks/      ユニットを束ねるコンポジット（vdi-core）
 live/                環境ごとの実体。root.hcl = S3 backend / stack_vars.hcl = 環境パラメータ
 ```
 
 依存グラフ: `vpc → managed-ad → workspaces-pools ← saml-provider` / `vpc → image-builder → golden-image-updater ← workspaces-pools`
 
-Golden Image 自動更新フロー: SSM Maintenance Window (日曜 AM2) → EventBridge → Lambda orchestrator → Image Builder → EventBridge → Lambda pool_updater → WorkSpaces Pool 更新。
+Golden Image 自動更新フロー: Image Builder 週次スケジュール（日曜 02:00 JST、update-windows コンポーネントがパッチ適用）→ EventBridge → Lambda pool_updater（Import → Bundle 作成 → Pool 更新）。
 
 ## 変更時の連動ルール
 

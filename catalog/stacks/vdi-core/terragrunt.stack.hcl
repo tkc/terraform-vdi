@@ -68,10 +68,6 @@ unit "workspaces_pools" {
   }
 }
 
-unit "ssm_patch" {
-  source = "${get_repo_root()}/catalog/units/ssm-patch"
-}
-
 unit "image_builder" {
   source = "${get_repo_root()}/catalog/units/image-builder"
 
@@ -86,12 +82,10 @@ unit "image_builder" {
 unit "golden_image_updater" {
   source = "${get_repo_root()}/catalog/units/golden-image-updater"
 
-  depends_on = [unit.image_builder, unit.workspaces_pools, unit.ssm_patch]
+  depends_on = [unit.image_builder, unit.workspaces_pools]
 
   inputs = {
-    image_builder_pipeline_arn = unit.image_builder.outputs.pipeline_arn
-    workspaces_pool_id         = unit.workspaces_pools.outputs.pool_id
-    maintenance_window_id      = unit.ssm_patch.outputs.maintenance_window_id
-    image_arn_prefix           = unit.image_builder.outputs.image_arn_prefix
+    workspaces_pool_id = unit.workspaces_pools.outputs.pool_id
+    image_arn_prefix   = unit.image_builder.outputs.image_arn_prefix
   }
 }

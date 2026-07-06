@@ -40,6 +40,12 @@ provider "aws" {
     }
   }
 }
+
+# awscc（WorkSpaces Pools 用）にも明示的に region を渡す。
+# 未設定だと環境変数頼みになり、クリーン環境の plan が失敗する
+provider "awscc" {
+  region = "${local.region}"
+}
 EOF
 }
 

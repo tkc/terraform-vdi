@@ -12,7 +12,7 @@ AWS WorkSpaces Pools による VDI 基盤。Entra ID 認証・閉鎖網接続・
 | Office 認証（Active Directory） | AWS Managed Microsoft AD にドメイン参加 | `managed-ad` |
 | 別サービスへ閉鎖網で接続 | Transit Gateway（他アカウント所有・RAM 共有） | `tgw-attachment` |
 | インターネット遮断 | VPC エンドポイントのみで AWS API に到達 | `vpc` |
-| Windows Update 検知 → Golden Image 自動更新 | SSM Patch → EventBridge → Image Builder → Pool 更新 | `ssm-patch` / `image-builder` / `golden-image-updater` |
+| Windows Update → Golden Image 自動更新 | Image Builder 週次スケジュール（update-windows コンポーネント）→ EventBridge → Pool 更新 | `image-builder` / `golden-image-updater` |
 
 ## 全体構成
 
@@ -80,31 +80,25 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant MW as SSM Maintenance Window<br/>(毎週日曜 AM 2:00)
-    participant EB1 as EventBridge
-    participant L1 as Lambda: orchestrator
-    participant IB as EC2 Image Builder
-    participant EB2 as EventBridge
-    participant L2 as Lambda: pool_updater
+    participant IB as EC2 Image Builder<br/>(週次スケジュール 日曜 02:00 JST)
+    participant EB as EventBridge
+    participant L as Lambda: pool_updater
     participant WS as WorkSpaces Pool
 
-    MW->>MW: AWS-RunPatchBaseline 実行<br/>(Windows Update 適用)
-    MW->>EB1: 実行完了イベント (SUCCESS)
-    EB1->>L1: 起動
-    L1->>IB: StartImagePipelineExecution
-    IB->>IB: ベース AMI + 業務アプリ + Windows Update<br/>→ 新 AMI 作成・検証
-    IB->>EB2: Image State Change (AVAILABLE)
-    EB2->>L2: 起動
-    L2->>WS: ImportWorkspaceImage（取り込み・冪等）
-    L2->>WS: AVAILABLE まで待機
-    L2->>WS: CreateWorkspaceBundle → UpdateWorkspacesPool
+    IB->>IB: ベース AMI + 業務アプリ + update-windows<br/>コンポーネントで最新パッチ適用 → 新 AMI 作成・検証
+    IB->>EB: Image State Change (AVAILABLE)
+    EB->>L: 起動（自パイプラインの ARN プレフィックスのみ）
+    L->>WS: ImportWorkspaceImage（取り込み・冪等）
+    L->>WS: AVAILABLE まで待機
+    L->>WS: CreateWorkspaceBundle → UpdateWorkspacesPool
     Note over WS: 新セッションから新イメージが適用される
 ```
 
-- 更新は**完全自動**（人間の承認ゲートなし）。承認制にする場合は L1 の前に SNS + 手動承認ステップを挿入する
+- 更新は**完全自動**（人間の承認ゲートなし）。承認制にする場合は pool_updater の前に SNS + 手動承認ステップを挿入する
+- Windows Update の適用は Image Builder レシピ内の **update-windows コンポーネント**が担う。旧設計（SSM Maintenance Window でパッチ→検知）はターゲットとなる常駐インスタンスが存在せず機能していなかったため、パイプラインのネイティブ週次スケジュールに簡素化した（review-log #4-1）
 - AMI は直接 Pool に適用できないため、**Image 取り込み → Bundle 作成**の 2 段を Lambda が冪等に実行する。取り込みが Lambda の 15 分を超える場合は EventBridge の非同期リトライ（最大 2 回）で続きから再開。それでも足りない環境は Step Functions 化を検討
-- パッチ判定基準: Critical/Security は 7 日後自動承認、その他 Updates は 14 日後（`ssm-patch` の Patch Baseline）
 - `workspaces-pools` の `lifecycle.ignore_changes = [bundle_id]` により、Lambda による画像更新を Terraform が巻き戻さない
+- **レシピ変更時の注意**: Image Builder のレシピは immutable。コンポーネントや parent_image を変更したら `version` を必ず上げる（上げないと apply が失敗する）
 
 ## ネットワーク設計
 

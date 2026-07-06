@@ -1,15 +1,5 @@
-variable "image_builder_pipeline_arn" {
-  description = "ARN of the EC2 Image Builder pipeline to trigger"
-  type        = string
-}
-
 variable "workspaces_pool_id" {
   description = "WorkSpaces Pool ID to update when new image is ready"
-  type        = string
-}
-
-variable "maintenance_window_id" {
-  description = "SSM Maintenance Window ID to filter EventBridge on (prevents firing on unrelated windows)"
   type        = string
 }
 
@@ -28,4 +18,16 @@ variable "bundle_compute_type" {
   description = "Compute type for the auto-created WorkSpaces bundle (e.g. STANDARD, PERFORMANCE, GRAPHICS_G4DN)"
   type        = string
   default     = "STANDARD"
+}
+
+variable "bundle_user_storage_gb" {
+  description = "User volume size (GB) for the auto-created bundle (must be valid for the compute type)"
+  type        = number
+  default     = 50
+}
+
+variable "bundle_root_storage_gb" {
+  description = "Root volume size (GB) for the auto-created bundle (must be valid for the compute type)"
+  type        = number
+  default     = 80
 }
