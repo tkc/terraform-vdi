@@ -34,6 +34,14 @@
 |---|---|---|---|
 | 12-1 | INFO | 機械チェック結果 | stack 参照 outputs 全定義あり・default なし変数すべて供給・stack_vars 全キー消費・CI green。**新規指摘ゼロ** |
 
+### 補追（並行レビューセッションの追加発見 — 収束判定を保留に修正）
+
+| # | 深刻度 | 場所 | 内容 |
+|---|---|---|---|
+| 12-2 | **HIGH** | `workspaces-pools` × `vpc` | **workspaces SG がどこにもアタッチされていない**（8-1 と同型）。`aws_workspaces_directory` の `workspace_creation_properties` に `custom_security_group_id` が無く、`sg_workspaces_id` output は stack のどこからも参照されていない。つまり **#9-2 / #10 で積み上げた AD 13 ポートの SG ルール一式が一度も効いていない**（WorkSpaces インスタンスには AWS 既定 SG が付く）。修正: workspaces-pools に `security_group_id` 変数を追加し `custom_security_group_id` に配線 + stack で `unit.vpc.outputs.sg_workspaces_id` を渡す |
+
+**収束判定の修正**: 12-2（HIGH）が出たため「新規指摘ゼロ」は取り消し。頻度見直し提案は 12-2 の修正完了後に改めて判断する。教訓: 「SG を定義した」と「SG が効いている」は別 — **アタッチ配線の照合**（定義した SG / IAM ロール / トピックが実際にリソースへ接続されているか）を定期確認事項に追加すべき。
+
 ### 収束判定 → ループ頻度の見直しを提案
 
 深刻度の推移: #9 HIGH×2 → #10 LOW×2 → #11 LOW×2 → **#12 新規ゼロ**。静的レビューで見つかる問題は枯れた。残タスクはすべて**このループでは進められない種類**のもの:
