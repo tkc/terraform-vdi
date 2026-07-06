@@ -147,7 +147,8 @@ graph LR
 | 項目 | 場所 | 状態 |
 |---|---|---|
 | Transit Gateway ID | `live/prod/ap-northeast-1/vdi/stack_vars.hcl` | プレースホルダー（他アカウント管理者に確認） |
-| WorkSpaces Bundle ID | 同上 | プレースホルダー（コンソールで利用可能 ID を確認） |
+| WorkSpaces Bundle ID | 同上 | プレースホルダー（コンソールで確認。**初回構築時のみ使用**、以後は自動更新が置換） |
+| アラート通知先 `alert_email` | 同上 | 未設定（**空のままだとアラームが誰にも届かない**） |
 | Entra ID メタデータ XML | `catalog/units/saml-provider/` | プレースホルダー（Azure Portal から取得） |
 | AD 管理者パスワード | Secrets Manager | 事前作成が必要 |
 | CI の plan ジョブ | GitHub Variables `AWS_ROLE_ARN` | 未設定（OIDC ロール作成後に有効化） |

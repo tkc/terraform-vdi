@@ -16,8 +16,11 @@ locals {
   ad_password_secret_arn = "arn:aws:secretsmanager:ap-northeast-1:ACCOUNT_ID:secret:vdi/ad-admin-password"
 
   # ── WorkSpaces Pools ────────────────────────────────────
-  workspaces_bundle_id  = "wsb-gk1wpk43z"  # 要確認: コンソールで使用可能な Bundle ID
-  pool_name             = "vdi-pool-prod"
-  workspace_access_url  = "workspaces.example.com"
-  max_user_sessions = 2 # 同時最大 2 セッション = 確保容量
+  workspaces_bundle_id = "wsb-gk1wpk43z" # 要確認: コンソールで使用可能な Bundle ID（初回構築時のみ。以後は自動更新が置換）
+  pool_name            = "vdi-pool-prod"
+  workspace_access_url = "workspaces.example.com"
+  max_user_sessions    = 2 # 同時最大 2 セッション = 確保容量
+
+  # ── アラート通知 ────────────────────────────────────────
+  alert_email = "" # 要設定: 空だと SNS 購読が作られずアラームが誰にも届かない
 }

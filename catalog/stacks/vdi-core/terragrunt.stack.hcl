@@ -87,5 +87,6 @@ unit "golden_image_updater" {
   inputs = {
     workspaces_pool_id = unit.workspaces_pools.outputs.pool_id
     image_arn_prefix   = unit.image_builder.outputs.image_arn_prefix
+    alert_email        = local.vars.locals.alert_email
   }
 }
