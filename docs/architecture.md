@@ -109,7 +109,7 @@ sequenceDiagram
 | サブネット | プライベート × 2 AZ のみ。パブリックサブネット・IGW・NAT なし |
 | AWS API 到達 | Interface 型 VPC エンドポイント（ssm / ssmmessages / ec2messages / workspaces / imagebuilder / lambda / events）+ S3 Gateway 型 |
 | 他アカウント接続 | Transit Gateway アタッチメント。TGW 本体は他アカウント所有・RAM 共有（`data` 参照） |
-| セキュリティグループ | WorkSpaces → AD は LDAP/LDAPS/DNS のみ、他アカウント向けは指定 CIDR のみ許可 |
+| セキュリティグループ | WorkSpaces → AD は AD 必須ポートセット（DNS / Kerberos / NTP / RPC + 動的レンジ / SMB / LDAP / LDAPS / GC の 13 種、`vpc/main.tf` の `local.ad_ports` に用途コメント付きで定義）、他アカウント向けは指定 CIDR × 指定ポートのみ、ビルドインスタンスは専用 SG（VPC エンドポイント + S3 prefix list のみ） |
 
 ## ユニット依存グラフ
 

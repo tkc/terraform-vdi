@@ -5,7 +5,7 @@ AWS WorkSpaces Pools による VDI 基盤の Terragrunt IaC。
 - **認証**: Entra ID（SAML 2.0）でログイン、AWS Managed Microsoft AD でドメイン参加・Office 認証
 - **同時利用**: 最大 2 セッション
 - **ネットワーク**: 完全閉鎖網（インターネット遮断、VPC エンドポイント + Transit Gateway のみ）
-- **Golden Image**: Windows Update を検知して自動リビルド → Pool 自動更新
+- **Golden Image**: 週次で自動リビルド → Pool 自動更新（パッチ焼き込みの閉鎖網到達性は要検証）
 
 詳細は [docs/architecture.md](docs/architecture.md)（構成図・認証フロー・更新フロー）。障害対応は [docs/runbook.md](docs/runbook.md)。
 
@@ -19,7 +19,7 @@ catalog/
 │   ├── tgw-attachment/    #   他アカウントへの Transit Gateway 経路
 │   ├── saml-provider/     #   Entra ID SAML フェデレーション
 │   ├── workspaces-pools/  #   VDI 本体（WorkSpaces Pools）
-│   ├── image-builder/     #   Golden Image 週次ビルド（日曜 02:00 JST に Windows Update 焼き込み）
+│   ├── image-builder/     #   Golden Image 週次ビルド（日曜 02:00 JST。※Update 到達性は要検証 — 引き継ぎ表参照）
 │   └── golden-image-updater/  # AMI 完成 → Pool 反映の EventBridge + Lambda
 └── stacks/vdi-core/       # ユニットの依存関係・配線
 
