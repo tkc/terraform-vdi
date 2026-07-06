@@ -7,6 +7,8 @@
 # entra-id-metadata.xml のプレースホルダー内コメントを参照。
 # ══════════════════════════════════════════════════════════════════
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_iam_saml_provider" "entra_id" {
   name                   = "EntraID-WorkSpaces"
   saml_metadata_document = file("${path.module}/entra-id-metadata.xml")
@@ -35,6 +37,9 @@ resource "aws_iam_role" "workspaces_saml" {
   })
 }
 
+# フェデレーションユーザーに必要なのはストリーミング接続のみ。
+# 管理系アクション（Pool 削除・ディレクトリ変更等）は付与しない。
+# userId 条件で「自分のセッションにしか接続できない」ことを強制する
 resource "aws_iam_role_policy" "workspaces_saml" {
   name = "WorkSpaces-SAML-Policy"
   role = aws_iam_role.workspaces_saml.id
@@ -44,8 +49,13 @@ resource "aws_iam_role_policy" "workspaces_saml" {
     Statement = [
       {
         Effect   = "Allow"
-        Action   = ["workspaces:*"]
-        Resource = "*"
+        Action   = ["workspaces:Stream"]
+        Resource = "arn:aws:workspaces:*:${data.aws_caller_identity.current.account_id}:directory/*"
+        Condition = {
+          StringEquals = {
+            "workspaces:userId" = "$${saml:sub}"
+          }
+        }
       }
     ]
   })

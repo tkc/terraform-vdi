@@ -63,11 +63,13 @@ resource "aws_cloudwatch_event_rule" "ssm_window_complete" {
   name        = "vdi-ssm-maintenance-window-complete"
   description = "SSM Maintenance Window 成功完了を検知して Image Builder を起動"
 
+  # window-id で絞る: 他の Maintenance Window の完了で誤発火させない
   event_pattern = jsonencode({
     source      = ["aws.ssm"]
     detail-type = ["Maintenance Window Execution State-change Notification"]
     detail = {
-      status = ["SUCCESS"]
+      status      = ["SUCCESS"]
+      "window-id" = [var.maintenance_window_id]
     }
   })
 }
@@ -91,9 +93,12 @@ resource "aws_cloudwatch_event_rule" "image_builder_complete" {
   name        = "vdi-image-builder-complete"
   description = "EC2 Image Builder パイプライン完了を検知して WorkSpaces Pool を更新"
 
+  # resources の ARN プレフィックスで絞る:
+  # 無関係なパイプラインのイメージ完成で Pool が書き換わる事故を防ぐ
   event_pattern = jsonencode({
     source      = ["aws.imagebuilder"]
     detail-type = ["EC2 Image Builder Image State Change"]
+    resources   = [{ prefix = var.image_arn_prefix }]
     detail = {
       state = {
         status = ["AVAILABLE"]

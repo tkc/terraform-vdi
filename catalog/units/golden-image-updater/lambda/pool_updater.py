@@ -27,7 +27,9 @@ def handler(event, context):
     logger.info(json.dumps(event))
 
     pool_id = os.environ["WORKSPACES_POOL_ID"]
-    image_build_arn = event["detail"]["imageBuildVersionArn"]
+    # "EC2 Image Builder Image State Change" イベントはビルド版 ARN を
+    # resources[0] に載せる（detail には state しか入らない）
+    image_build_arn = event["resources"][0]
 
     # AMI ID を取得
     ami_id = get_ami_id_from_build_arn(image_build_arn)
