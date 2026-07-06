@@ -7,6 +7,41 @@
 
 ---
 
+## #7 2026-07-06 — 観点: ドキュメントの不完全さ（2 巡目）
+
+### 今回修正したこと（前回指摘の解消、コミット `5c90bf4`）
+
+- **6-2 修正済み**: architecture.md に DLQ + アラーム + runbook 導線を反映
+- **6-1 修正済み**: stack 未参照 outputs 8 件に用途コメント（Entra ID 設定用 / DNS フォワーダ用 / runbook 手動実行用を明示）
+- **1-6 修正済み**: README に state アクセス制御の警告（AD パスワードが state に平文で入る）
+- **2-5 修正済み**: `transit_gateway_id` / `bundle_id` / `max_user_sessions` に validation（プレースホルダー plan の早期明確失敗）
+- **2-6 修正済み**: description 欠落 5 変数を補完
+- **6-4 修正済み**: .gitignore に lock ファイル ignore の意図コメント
+
+### 確認事項
+
+- 新規追加分（DLQ・アラーム・runbook・新変数）のドキュメント反映漏れ
+- 引き継ぎ表の鮮度
+- review-log 自体の肥大化
+- README ⇔ runbook ⇔ architecture の導線
+
+### 気づいた点（未修正 → 次回対応）
+
+| # | 深刻度 | 場所 | 内容 |
+|---|---|---|---|
+| 7-1 | **MEDIUM** | stack / stack_vars | **`alert_email` が stack に配線されておらず、SNS 購読が作られない = アラームは発報しても誰にも届かない**（5-1 の実効性が未完）。stack 配線 + stack_vars 掲載 + 引き継ぎ表への追加が必要 |
+| 7-2 | LOW | review-log.md | 230 行に肥大。解決済みエントリ（#1〜#3 あたり）を `docs/review-log-archive.md` へ移し、先頭に「未解決バックログ一覧表」を常設する構成に改めるべき（毎回全文を読まずに残タスクが見える） |
+| 7-3 | LOW | architecture.md 引き継ぎ表 | `alert_email` の行が無い（7-1 と対）。Bundle ID 行にも「初期 Bundle の意味」の注記があると初見に親切 |
+| 7-4 | INFO | 導線確認結果 | README → runbook / architecture の相互リンク OK・runbook のコマンド例と stack_vars の Pool 名整合 OK・引き継ぎ表の既存 5 行は全て現状と一致 |
+
+### 次回の確認事項
+
+1. **修正**: 7-1（alert_email 配線 — アラートの実効性確保）・7-3（引き継ぎ表更新）
+2. **修正**: 7-2（review-log のアーカイブ分割 + 未解決バックログ表の常設）
+3. **新規レビュー観点**: 問題の有無（3 巡目）— 残バックログの棚卸し（1-4 / 1-7 / 2-3 / 4-4）+ vpc の managed_ad SG が実際に使われているかの検証（Managed AD は自前 SG を持つため未アタッチの疑い）
+
+---
+
 ## #6 2026-07-06 — 観点: コードの読みやすさ（2 巡目・簡素化後の取り残し）
 
 ### 今回修正したこと（前回指摘の解消、コミット `a5d6a91`）
