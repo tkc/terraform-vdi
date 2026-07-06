@@ -36,10 +36,18 @@
 | 4-4 | INFO | `image-builder` | ビルドインスタンスが WorkSpaces 用 SG（sg_workspaces_id）を借用。現状の egress で動作はするが、役割の異なるリソースの SG 共有は将来の変更で壊れやすい。専用 SG の分離が望ましい |
 | 4-5 | INFO | 整合性チェック結果 | stack 参照 outputs 9 件すべてユニット側に定義あり・default なし変数はすべて stack inputs で供給・CI 直近 2 ラン green。構造的な不整合なし |
 
+### 補追（並行レビューセッションの追加発見）
+
+| # | 深刻度 | 場所 | 内容 |
+|---|---|---|---|
+| 4-6 | **MEDIUM** | `live/root.hcl` | versions には awscc を宣言しているのに **generate "provider" に `provider "awscc"` ブロックが無い**。awscc は region 設定が必要で、現状は環境変数（AWS_REGION）頼み。CI やクリーン環境での plan が失敗しうる |
+| 4-7 | **MEDIUM** | `pool_updater.py` `find_or_create_bundle` | `describe_workspace_bundles` を**ページネーションしていない**（images 側は paginator 使用で非対称）。自動更新の蓄積で Bundle が 1 ページを超えると既存 Bundle を見逃し、同名 Create が ResourceAlreadyExistsException → 更新チェーン停止 |
+| 4-8 | LOW | `pool_updater.py:102-103` | `UserStorage "50"` / `RootStorage "80"` がハードコード。ComputeType と不整合な組合せだと CreateWorkspaceBundle が失敗する。環境変数化すべき |
+
 ### 次回の確認事項
 
 1. **修正（最優先）**: 4-1 — 推奨案 (a) で MW + patch-baseline を EventBridge Scheduler 起動に簡素化（architecture.md の更新込み）
-2. **修正**: 4-3（provider 最小バージョン）・4-2（レシピバージョンの注意書き）
+2. **修正**: 4-6（awscc provider 生成）・4-7（Bundle ページネーション）・4-3（provider 最小バージョン）・4-2（レシピバージョンの注意書き）・4-8（ストレージ変数化）
 3. **残バックログ**: 3-2（runbook）・1-4（pool_updater IAM の Resource 絞り込み）・1-6（state アクセス制御の README 記載）・1-7（VPC エンドポイントポリシー）・2-3（タイムアウト変数化）・2-5（validation）・2-6（description）
 4. **新規レビュー観点**: セキュリティ（2 巡目 — 修正済み項目の再確認 + Lambda 権限・S3 ポリシー・タグ戦略）
 
