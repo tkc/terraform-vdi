@@ -27,12 +27,23 @@ resource "aws_ec2_transit_gateway_vpc_attachment" "main" {
 }
 
 # プライベートサブネットの各ルートテーブルに他アカウント CIDR → TGW のルートを追加。
-# (ルートテーブル数 × CIDR 数) の直積を count で展開している
-resource "aws_route" "to_other_accounts" {
-  count = length(var.route_table_ids) * length(var.other_account_cidrs)
+# キーを「rt インデックス + CIDR」にすることで、CIDR の追加・削除時に
+# 無関係なルートが再作成されない（count の直積だと index がずれて全再作成になる）
+locals {
+  tgw_routes = {
+    for pair in setproduct(range(length(var.route_table_ids)), var.other_account_cidrs) :
+    "rt${pair[0]}-${pair[1]}" => {
+      route_table_id = var.route_table_ids[pair[0]]
+      cidr           = pair[1]
+    }
+  }
+}
 
-  route_table_id         = var.route_table_ids[count.index % length(var.route_table_ids)]
-  destination_cidr_block = var.other_account_cidrs[floor(count.index / length(var.route_table_ids))]
+resource "aws_route" "to_other_accounts" {
+  for_each = local.tgw_routes
+
+  route_table_id         = each.value.route_table_id
+  destination_cidr_block = each.value.cidr
   transit_gateway_id     = data.aws_ec2_transit_gateway.shared.id
 
   depends_on = [aws_ec2_transit_gateway_vpc_attachment.main]

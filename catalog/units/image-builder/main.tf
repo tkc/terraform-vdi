@@ -178,8 +178,9 @@ resource "aws_kms_key" "image_builder_logs" {
 }
 
 resource "aws_s3_bucket" "image_builder_logs" {
-  bucket        = "vdi-image-builder-logs-${data.aws_caller_identity.current.account_id}"
-  force_destroy = true
+  bucket = "vdi-image-builder-logs-${data.aws_caller_identity.current.account_id}"
+  # ビルドログは監査証跡。terraform destroy で消さない
+  force_destroy = false
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "image_builder_logs" {

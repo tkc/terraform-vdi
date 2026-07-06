@@ -47,6 +47,7 @@ live/
 make check
 
 # 本番環境の dry-run（AWS 認証が必要）
+export AWS_PROFILE=<your-profile>   # または aws sso login / 環境変数で認証
 make plan
 ```
 
@@ -61,10 +62,32 @@ terragrunt run-all apply
 
 コード外で用意するもの（詳細は [docs/architecture.md の引き継ぎ事項](docs/architecture.md#未設定引き継ぎ事項)）：
 
+0. **Terraform state 用の S3 バケットと DynamoDB ロックテーブルを作成**（root.hcl が参照。未作成だと初回 plan が失敗する）:
+
+   ```bash
+   ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+   aws s3api create-bucket --bucket "tfstate-vdi-${ACCOUNT_ID}" \
+     --region ap-northeast-1 \
+     --create-bucket-configuration LocationConstraint=ap-northeast-1
+   aws s3api put-bucket-versioning --bucket "tfstate-vdi-${ACCOUNT_ID}" \
+     --versioning-configuration Status=Enabled
+   aws s3api put-bucket-encryption --bucket "tfstate-vdi-${ACCOUNT_ID}" \
+     --server-side-encryption-configuration \
+     '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+   aws dynamodb create-table --table-name tfstate-lock-vdi \
+     --attribute-definitions AttributeName=LockID,AttributeType=S \
+     --key-schema AttributeName=LockID,KeyType=HASH \
+     --billing-mode PAY_PER_REQUEST
+   ```
+
 1. **Secrets Manager** に AD 管理者パスワードを登録
 2. **Entra ID** で Enterprise Application (SAML) を作成し、メタデータ XML を `catalog/units/saml-provider/entra-id-metadata.xml` に配置（手順はプレースホルダー内コメント）
 3. `live/prod/ap-northeast-1/vdi/stack_vars.hcl` の **TGW ID / Bundle ID / ドメイン名** を実値に更新
 4. 接続先アカウント側で **Transit Gateway の RAM 共有** と戻りルートを設定
+
+### Bundle ID の意味（自動更新との関係）
+
+`stack_vars.hcl` の `workspaces_bundle_id` は**初回構築時の Bundle** を指す。稼働後は Golden Image 自動更新チェーンが `vdi-bundle-<AMI ID>` という Bundle を作成して Pool を置き換えていくため、Terraform 側は `lifecycle.ignore_changes = [bundle_id]` で追随しない設計になっている。取り込み方式は `ingestion_process`（既定 `BYOL_REGULAR`）、Bundle のスペックは `bundle_compute_type`（既定 `STANDARD`）で調整できる。
 
 ## CI
 
