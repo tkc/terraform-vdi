@@ -30,6 +30,7 @@
 | 6-1 | LOW | 各 outputs.tf | stack 未参照の outputs が 8 件。用途があるもの（`saml_role_arn` = Entra ID の Role 属性設定に必要・`dns_ip_addresses` = DNS フォワーダ設定用）と旧設計の名残（`pipeline_arn` / `pipeline_name` は orchestrator 削除で未参照化）が混在。outputs に用途コメントを付けて区別すべき |
 | 6-2 | LOW | architecture.md | #6 で追加した DLQ + アラーム + runbook がまだ構成図・本文に未反映 |
 | 6-3 | INFO | 取り残しチェック結果 | 削除済み要素への残存参照は歴史的注記 1 箇所のみ（意図的・review-log 参照付き）。コード側の取り残しなし。コメント鮮度も問題なし |
+| 6-4 | INFO | `.gitignore:3` | `.terraform.lock.hcl` を一律 ignore している。provider は root.hcl の `~> 5.50` ピンで実質固定されているため実害は小さいが、完全な再現性（パッチバージョンまで固定 + ハッシュ検証）を求めるなら live 側のロックファイルはコミットする方針もある。現状維持なら「意図的に ignore」の旨をコメントすべき（並行レビューセッションの発見） |
 
 ### 次回の確認事項
 
