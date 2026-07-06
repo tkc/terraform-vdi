@@ -35,10 +35,16 @@
 | 5-3 | LOW | `workspaces-pools` | awscc provider は default_tags 非対応のため **Pool 本体にタグが一切付かない**。コスト配賦・棚卸しから漏れる。awscc リソースに明示 tags を付与すべき |
 | 5-4 | INFO | 再確認結果 | #1〜#4 の修正済み項目に退行なし（SAML = Stream+userId 条件維持・EventBridge フィルタ維持・SG ポート制限維持）。Trivy HIGH/CRITICAL 0 件継続 |
 
+### 補追（並行レビューセッションの追加発見）
+
+| # | 深刻度 | 場所 | 内容 |
+|---|---|---|---|
+| 5-5 | **MEDIUM** | `image-builder` ログ設定 | **ビルドログが実際には書けない疑い**。インスタンスプロファイルは AWS 管理ポリシーのみで、`EC2InstanceProfileForImageBuilder` の S3 書込許可は `*imagebuilder*` パターンのバケットに限られる — バケット名 `vdi-image-builder-logs-*`（ハイフン入り）はこのパターンに**一致しない**可能性が高い。さらに SSE-KMS のため書き手に `kms:GenerateDataKey` が必要だが、KMS キーポリシー・IAM のどちらにも付与がない。修正: インスタンスロールに明示の S3 put + KMS ポリシーを追加（または plan/実機で権限を検証してから判断） |
+
 ### 次回の確認事項
 
 1. **修正**: 5-1（DLQ + アラーム）— 3-2（runbook）と対で実施すると効果的
-2. **修正**: 5-2（TLS 強制ポリシー）・5-3（Pool タグ）
+2. **修正**: 5-5（ビルドログ書込権限）・5-2（TLS 強制ポリシー）・5-3（Pool タグ）
 3. **残バックログ**: 3-2（runbook）・1-4（Lambda IAM Resource 絞り込み）・1-6（state アクセス制御 README）・1-7（VPC エンドポイントポリシー）・2-3（タイムアウト変数化）・2-5（validation）・2-6（description）・4-4（ビルド用 SG 分離）
 4. **新規レビュー観点**: コードの読みやすさ（2 巡目 — 簡素化後の構造・削除の取り残し・コメントの鮮度）
 
